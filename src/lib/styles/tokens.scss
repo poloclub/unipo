@@ -1,0 +1,150 @@
+// ============================================================
+// Design Tokens — unipo
+// ============================================================
+// Background: white. Use grey only where text/borders truly need it.
+// Minimum font size 12px. Body contrast ≥ 4.5:1 (AA).
+
+// ---- Spacing (4px scale) ----
+$sp-1: 4px;
+$sp-2: 8px;
+$sp-3: 12px;
+$sp-4: 16px;
+$sp-5: 20px;
+$sp-6: 24px;
+$sp-8: 32px;
+$sp-10: 40px;
+$sp-12: 48px;
+$sp-15: 60px;
+
+// ---- Radius ----
+$radius-sm: 4px;
+$radius-md: 6px;
+$radius-lg: 10px;
+$radius-pill: 9999px;
+
+// ---- Font family ----
+$font-sans:
+  -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+  sans-serif;
+$font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+
+// ---- Font sizes (base 16px) ----
+$fs-xs: 14px; // small label/meta (near the floor)
+$fs-sm: 15px; // secondary body (slightly under base)
+$fs-base: 15px; // default body
+$fs-md: 16px; // emphasized body / sub-heading
+$fs-lg: 20px; // section title
+$fs-xl: 24px; // panel title
+$fs-2xl: 30px;
+$fs-3xl: 38px;
+$fs-4xl: 48px; // display number (Step Inspector 736)
+
+// ---- Letter spacing ----
+$track-tight: -0.01em; // large titles
+$track-normal: 0;
+$track-wide: 0.06em; // overline label (uppercase tertiary)
+$track-wider: 0.08em;
+
+// ---- Font weights ----
+// Design decision: all emphasis collapses to a single 500 (medium) step.
+// $fw-semibold/$fw-bold are kept as aliases for backwards compat; their value is 500.
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-semibold: 500;
+$fw-bold: 500;
+
+// ---- Line heights ----
+$lh-tight: 1.25;
+$lh-normal: 1.5;
+$lh-relaxed: 1.65;
+
+// ---- Colors ----
+// Page background is pure white; greys are neutral (no yellow tint).
+$c-bg: #ffffff;
+$c-surface: #ffffff;
+$c-surface-subtle: #f7f7f7; // nested surface (use sparingly)
+
+// Ink (text) — neutral grey, AA contrast or better on white.
+$c-ink-1: #171717; // 19:1 — primary
+$c-ink-2: #4a4a4a; // 9.7:1 — secondary
+$c-ink-3: #707070; // 5:1 — tertiary/muted
+
+// Hairline & divider — neutral.
+$c-line: #e5e5e5;
+$c-line-soft: #f0f0f0;
+
+// ---- Semantic color tokens ----
+// base/tint/strong 3-layer scheme:
+//   base   = identity color (solid button, indicator)
+//   tint   = pale background (placed on white)
+//   strong = text on top of tint (ensures contrast)
+
+// Pink — response/token/attention (saturated).
+$c-pink: #ff4f93;
+$c-pink-tint: #fde4ef;
+$c-pink-strong: #b8256a;
+
+// Green — reward/advantage (saturated).
+$c-green: #22c583;
+$c-green-tint: #d6f5e2;
+$c-green-strong: #136b3f;
+
+// Blue — ratio/info
+$c-blue: #4a86cf;
+$c-blue-tint: #dce8f5;
+$c-blue-strong: #1e4d8c; // 6.3:1 on #dce8f5
+
+// Amber — warning (soft)
+$c-amber: #d99a3b;
+$c-amber-tint: #f5e7d0;
+$c-amber-strong: #8a5f18; // 5.0:1 on #f5e7d0
+
+// Red — clipped/danger
+$c-red: #d9534f;
+$c-red-tint: #f5d8d8;
+$c-red-strong: #8a2c2c; // 7.1:1 on #f5d8d8
+
+// Violet — combined / composite
+$c-violet: #8661c7;
+$c-violet-tint: #e7dff6;
+$c-violet-strong: #4a2f85; // 7.6:1 on #e7dff6
+
+// Diff — algorithm explainer compare mode (add/del highlights).
+$c-diff-add: rgba(243, 178, 36, 0.15);
+$c-diff-del: rgba(127, 116, 192, 0.15);
+
+// Reward — response card reward text color (deeper green for higher values).
+$c-reward: $c-green;
+
+// ---- Shadow ----
+$shadow-hairline: 0 0 0 1px $c-line; // border alternative
+$shadow-card:
+  0 1px 2px rgba(23, 23, 23, 0.04),
+  0 2px 8px rgba(23, 23, 23, 0.05);
+$shadow-elevated:
+  0 4px 16px rgba(23, 23, 23, 0.08),
+  0 1px 3px rgba(23, 23, 23, 0.06);
+
+// ---- Explainer region tints (calc cards) ----
+// Color-chip palette. Ratio=amber, Advantage=blue (swapped vs sketch).
+$c-ratio-tint: $c-amber-tint;
+$c-ratio-strong: $c-amber-strong;
+$c-advantage-tint: $c-blue-tint;
+$c-advantage-strong: $c-blue-strong;
+// Hyperparameter (ε, β) chip color — neutral grey.
+$c-hparam-tint: $c-line;
+$c-hparam-strong: $c-ink-2;
+// Outer wrapper chip around the β·KL group (light grey).
+$c-kl-tint: #f3f3f3;
+$c-kl-strong: $c-ink-3;
+
+// ---- Legacy aliases (for incremental migration; remove later). ----
+$c-black: $c-ink-1;
+$c-white: $c-bg;
+$c-gray-light: $c-line-soft;
+$c-gray-border: $c-line;
+$c-text-muted: $c-ink-3;
+$c-text-faint: $c-ink-3; // legacy 0.23 alpha violated 4.5:1; forced up to ink-3
+$c-text-hover: $c-ink-1;
+
+$fw-normal: $fw-regular;

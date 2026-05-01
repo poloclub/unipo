@@ -1,0 +1,154 @@
+{
+    "id": "reinforce",
+    "name": "REINFORCE",
+    "title": "REINFORCE",
+    "defaultVisibleCards": [
+        "step-level"
+    ],
+    "bindings": {
+        "log_prob_current": {
+            "from": "tokens.log_probs"
+        },
+        "reward": {
+            "from": "response.reward"
+        },
+        "baseline": {
+            "from": "entry.metrics.baseline"
+        },
+        "token_string": {
+            "from": "tokens.strings"
+        },
+        "token_objective": {
+            "from": "tokens.token_objective"
+        },
+        "reward_minus_baseline": {
+            "compute": "sub",
+            "inputs": [
+                "reward",
+                "baseline"
+            ]
+        }
+    },
+    "cards": [
+        {
+            "id": "step-level",
+            "title": "Step-level Objective",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "sections": [
+                {
+                    "id": "aggregation",
+                    "label": "Aggregation",
+                    "opensCardId": "aggregation-detail",
+                    "katex": "\\frac{1}{N}\\sum_{n=1}^{N}\\sum_{t=1}^{|o_n|}"
+                },
+                {
+                    "id": "per-token",
+                    "label": "Per-Token Objective",
+                    "opensCardId": "token-level",
+                    "katex": "\\htmlClass{term term--logprob}{\\log\\!\\left[\\mathrm{Prob}(\\htmlClass{term term--token_var}{\\text{Token}_t})\\ \\text{in }\\htmlClass{term term--current_model}{\\text{CurrentModel}}\\right]}\\cdot\\htmlClass{term term--reward-baseline}{(\\text{Reward}-\\text{Baseline})}",
+                    "header": {
+                        "binding": "token_objective",
+                        "format": "decimal:3",
+                        "style": "heatmap"
+                    },
+                    "termValues": {
+                        "logprob": {
+                            "binding": "log_prob_current",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "reward-baseline": {
+                            "binding": "reward_minus_baseline",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "token_var": {
+                            "binding": "token_string",
+                            "position": "replace",
+                            "format": "string"
+                        }
+                    }
+                }
+            ],
+            "terms": {
+                "aggregation": {
+                    "toCardId": "aggregation-detail",
+                    "toSectionId": "aggregation-detail"
+                },
+                "logprob": {
+                    "toCardId": "token-level",
+                    "toSectionId": "what",
+                    "tooltip": "Log of the probability that the current model produces this token. Decides which direction to push this token's probability."
+                },
+                "reward-baseline": {
+                    "toCardId": "token-level",
+                    "toSectionId": "how",
+                    "tooltip": "The response's reward minus the baseline. Positive if better than average, negative if worse. Decides how strongly to update."
+                },
+                "current_model": {
+                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its log-probability for this token is what we maximize."
+                }
+            },
+            "description": "Differentiating with respect to the model parameters yields the gradients used for optimization."
+        },
+        {
+            "id": "aggregation-detail",
+            "title": "What aggregation does",
+            "position": {
+                "x": 0,
+                "y": -250
+            },
+            "sections": [
+                {
+                    "id": "aggregation-detail",
+                    "label": "Implicit Token Weight",
+                    "katex": "\\frac{1}{N} \\quad \\left\\{ \\begin{aligned} &N = \\text{Prompt Set Size (Prompts per step)} \\end{aligned} \\right."
+                }
+            ],
+            "description": "During differentiation, the normalization term remains as a constant factor and is multiplied to each token's gradient."
+        },
+        {
+            "id": "token-level",
+            "title": "Token-level Objective",
+            "position": {
+                "x": 0,
+                "y": 200
+            },
+            "sections": [
+                {
+                    "id": "what",
+                    "label": "**Log-Prob** is what to optimize",
+                    "header": {
+                        "binding": "log_prob_current",
+                        "format": "decimal:3"
+                    },
+                    "katex": "\\log\\!\\left[\\mathrm{Prob}(\\htmlClass{term term--token_var}{\\text{Token}_t})\\ \\text{in }\\htmlClass{term term--current_model}{\\text{CurrentModel}}\\right]",
+                    "termValues": {
+                        "token_var": {
+                            "binding": "token_string",
+                            "position": "replace",
+                            "format": "string"
+                        }
+                    }
+                },
+                {
+                    "id": "how",
+                    "label": "**Reward** controls how much to optimize",
+                    "header": {
+                        "binding": "reward_minus_baseline",
+                        "format": "decimal:3"
+                    },
+                    "katex": "\\text{Reward} - \\text{Baseline}"
+                }
+            ],
+            "terms": {
+                "current_model": {
+                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its log-probability for this token is what we maximize."
+                }
+            }
+        }
+    ]
+}

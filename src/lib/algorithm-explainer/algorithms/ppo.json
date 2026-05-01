@@ -1,0 +1,225 @@
+{
+    "id": "ppo",
+    "name": "PPO",
+    "title": "Proximal Policy Optimization",
+    "defaultVisibleCards": [
+        "step-level"
+    ],
+    "bindings": {
+        "log_prob_current": {
+            "from": "tokens.log_probs"
+        },
+        "log_prob_old": {
+            "from": "tokens.old_log_probs"
+        },
+        "advantage": {
+            "from": "tokens.advantages"
+        },
+        "epsilon": {
+            "from": "header.hparams.clip_eps"
+        },
+        "beta": {
+            "from": "header.hparams.kl_coef"
+        },
+        "kl_token": {
+            "from": "tokens.token_kl"
+        },
+        "token_string": {
+            "from": "tokens.strings"
+        },
+        "token_objective": {
+            "from": "tokens.token_objective"
+        },
+        "prob_current": {
+            "compute": "exp",
+            "inputs": [
+                "log_prob_current"
+            ]
+        },
+        "prob_old": {
+            "compute": "exp",
+            "inputs": [
+                "log_prob_old"
+            ]
+        },
+        "ratio": {
+            "compute": "div",
+            "inputs": [
+                "prob_current",
+                "prob_old"
+            ]
+        },
+        "ratio_x_advantage": {
+            "compute": "mul",
+            "inputs": [
+                "ratio",
+                "advantage"
+            ]
+        },
+        "clipped_x_advantage": {
+            "compute": "clip_mul",
+            "inputs": [
+                "ratio",
+                "advantage",
+                "epsilon"
+            ]
+        },
+        "min_winner": {
+            "compute": "min_winner",
+            "inputs": [
+                "ratio_x_advantage",
+                "clipped_x_advantage"
+            ]
+        },
+        "kl_term": {
+            "compute": "neg_mul",
+            "inputs": [
+                "beta",
+                "kl_token"
+            ]
+        }
+    },
+    "cards": [
+        {
+            "id": "step-level",
+            "title": "Step-level Objective",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "sections": [
+                {
+                    "id": "aggregation",
+                    "label": "Aggregation",
+                    "opensCardId": "aggregation-detail",
+                    "katex": "\\frac{1}{N}\\sum_{n=1}^{N}\\frac{1}{|o_i|}\\sum_{t=1}^{|o_i|}"
+                },
+                {
+                    "id": "per-token",
+                    "label": "Per-Token Objective",
+                    "opensCardId": "token-level",
+                    "katex": "\\min\\!\\left(\\htmlClass{term term--ratio_branch}{\\htmlClass{term term--ratio}{\\text{Ratio}}\\cdot\\htmlClass{term term--advantage}{\\text{Advantage}}},\\ \\htmlClass{term term--clipped_branch}{\\htmlClass{term term--clip}{\\mathrm{clip}(\\text{Ratio},\\,1-\\epsilon,\\,1+\\epsilon)}\\cdot\\text{Advantage}}\\right)",
+                    "header": {
+                        "binding": "token_objective",
+                        "format": "decimal:3",
+                        "style": "heatmap"
+                    },
+                    "termValues": {
+                        "ratio_branch": {
+                            "binding": "ratio_x_advantage",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "clipped_branch": {
+                            "binding": "clipped_x_advantage",
+                            "position": "above",
+                            "format": "decimal:3"
+                        }
+                    },
+                    "compare": {
+                        "binding": "min_winner",
+                        "candidates": {
+                            "left": "ratio_branch",
+                            "right": "clipped_branch"
+                        },
+                        "marker": "check"
+                    }
+                }
+            ],
+            "terms": {
+                "aggregation": {
+                    "toCardId": "aggregation-detail",
+                    "toSectionId": "aggregation-detail"
+                },
+                "ratio": {
+                    "toCardId": "token-level",
+                    "toSectionId": "what",
+                    "tooltip": "How much more (or less) likely the CurrentModel is to produce this token relative to the OldModel. Decides which direction to push this token's probability."
+                },
+                "advantage": {
+                    "toCardId": "token-level",
+                    "toSectionId": "how",
+                    "tooltip": "Advantage computed via GAE. The discounted sum of future rewards minus the current value estimate, capturing the value beyond this token. Decides how strongly to update."
+                },
+                "clip": {
+                    "tooltip": "Clips Ratio whenever it falls outside [1−ε, 1+ε]. A safeguard that prevents the policy from shifting too far in a single step. ε is a hyperparameter (typically ~0.2)."
+                }
+            },
+            "description": "Differentiating with respect to the model parameters yields the gradients used for optimization."
+        },
+        {
+            "id": "aggregation-detail",
+            "title": "What aggregation does",
+            "position": {
+                "x": 0,
+                "y": -250
+            },
+            "sections": [
+                {
+                    "id": "aggregation-detail",
+                    "label": "Implicit Token Weight",
+                    "katex": "\\frac{1}{N \\cdot |o_i|} \\quad \\left\\{ \\begin{aligned} &N = \\text{Prompt Set Size (Prompts per step)} \\\\ &|o_i| = \\text{Response Length (Tokens in } i\\text{-th response)}, \\htmlClass{term term--length-bias}{\\text{Length bias}} \\end{aligned} \\right."
+                }
+            ],
+            "description": "During differentiation, the normalization term remains as a constant factor and is multiplied to each token's gradient.",
+            "terms": {
+                "length-bias": {
+                    "tooltip": "Under-weights tokens in longer responses"
+                }
+            }
+        },
+        {
+            "id": "token-level",
+            "title": "Token-level Objective",
+            "position": {
+                "x": 0,
+                "y": 200
+            },
+            "sections": [
+                {
+                    "id": "what",
+                    "label": "**Ratio** is what to optimize",
+                    "header": {
+                        "binding": "ratio",
+                        "format": "decimal:3"
+                    },
+                    "katex": "\\frac{\\htmlClass{term term--current_prob}{\\mathrm{Prob}(\\htmlClass{term term--token_var}{\\text{Token}_t})\\ \\text{in }\\htmlClass{term term--current_model}{\\text{CurrentModel}}}}{\\htmlClass{term term--old_prob}{\\mathrm{Prob}(\\htmlClass{term term--token_var}{\\text{Token}_t})\\ \\text{in }\\htmlClass{term term--old_model}{\\text{OldModel}}}}",
+                    "termValues": {
+                        "current_prob": {
+                            "binding": "prob_current",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "old_prob": {
+                            "binding": "prob_old",
+                            "position": "below",
+                            "format": "decimal:3"
+                        },
+                        "token_var": {
+                            "binding": "token_string",
+                            "position": "replace",
+                            "format": "string"
+                        }
+                    }
+                },
+                {
+                    "id": "how",
+                    "label": "**Advantage (GAE)** controls how much to optimize",
+                    "header": {
+                        "binding": "advantage",
+                        "format": "decimal:3"
+                    },
+                    "katex": "\\begin{aligned} &\\delta_t = \\text{Reward}_t + \\gamma\\cdot\\text{Value}_{t+1} - \\text{Value}_t \\\\ &\\text{Advantage} = \\delta_t + (\\gamma\\lambda)^1\\,\\delta_{t+1} + (\\gamma\\lambda)^2\\,\\delta_{t+2} + \\cdots + (\\gamma\\lambda)^N\\,\\delta_{t+N} \\end{aligned}"
+                }
+            ],
+            "terms": {
+                "current_model": {
+                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
+                },
+                "old_model": {
+                    "tooltip": "A frozen snapshot of the policy from the start of this update batch. Used as the Ratio denominator so the reference doesn't drift mid-update."
+                }
+            }
+        }
+    ]
+}

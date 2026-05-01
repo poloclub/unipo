@@ -1,0 +1,19 @@
+node_modules
+.svelte-kit
+build
+.env
+.env.*
+!.env.example
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# macOS
+.DS_Store
+
+# Per-algorithm step data — hosted externally (e.g. Hugging Face Datasets), not committed.
+# Add the folder path here when introducing a new algorithm.
+/static/dapo/
+/static/drgrpo/
+/static/grpo/
+/static/ppo/
+/static/reinforce/
