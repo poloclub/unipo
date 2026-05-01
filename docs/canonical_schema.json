@@ -1,0 +1,85 @@
+{
+  "header": {
+    "task": "math reasoning",                // Task description (free-form).
+    "dataset": "GSM8K",                      // Training dataset.
+    "reward_strategy": "correctness + format", // How rewards are computed (e.g. GPT-4 judge, human feedback, heuristic).
+    "algorithm": "ppo",
+    "totalSteps": 2,
+    "model_name": "meta-llama/Llama-3.2-1B-Instruct",
+    "reference_model_name": "meta-llama/Llama-3.2-1B-Instruct",
+    // All hyperparameters used in the run. Field names are free-form.
+    "hparams": {
+      "gamma": 1.0,
+      "gae_lambda": 0.95,
+      "clip_eps": 0.2,
+      "kl_coef": 0.04,
+      "learning_rate": 1e-6,
+      "group_size": 1
+    }
+  },
+  // One entry per model update, including mini-batch updates.
+  "entries": [
+    {
+      "step": 0,
+      // True on the first step after a rollout phase. Disambiguates steps where the
+      // importance-sampling ratio is exactly 1.
+      "is_first_step_after_rollout_phase": true,
+      // Step-level metrics. Include whatever you log — names below are conventional, not fixed.
+      "metrics": {
+        "policy_objective": 0.112,        // Required.
+        "reward": 0.35,                   // Required (mean reward across rollouts).
+        "reward_std": 0.5,
+        "policy_loss": 0.112,
+        "value_loss": 0.503,
+        "total_loss": 0.38,
+        "entropy": 2.85,
+        "kl": 0.12,
+        "clip_fraction": 0.0001,
+        "advantage_mean": 0.02,
+        "advantage_std": 0.72,
+        "grad_norm": 0.83,
+        "learning_rate": 1e-7,
+        "response_length": 34,
+        "total_length": 76,
+        "return": 0.34,
+        "importance_sampling_ratio": 0.998,
+        "dynamic_sampling_pass_rate": 62.5
+      },
+      // Three representative prompts from this step.
+      "prompts": [
+        {
+          "prompt": "Compute $2 + 2$.",
+          // For grouped algorithms (GRPO/DAPO), include the full group.
+          // Otherwise a single response.
+          "responses": [
+            {
+              "id": "step0_p0_sample0",
+              "reward": 0.85,
+              "advantage": 0.35,
+              "response_text": "The answer is $4$.",
+              "response_length": 4,
+              // Required: ids, strings. Plus whatever your algorithm consumes:
+              //   ratio:     log_probs, old_log_probs
+              //   advantage: advantages (PPO also uses values, returns)
+              //   KL:        token_kl, ref_log_probs
+              "tokens": {
+                "ids": [0, 1, 2, 3],
+                "strings": ["The", " answer", " is", " $4$."],
+                "log_probs":     [-0.21, -0.58, -0.09, -0.73],
+                "ref_log_probs": [-0.25, -0.61, -0.12, -0.81],
+                "old_log_probs": [-0.22, -0.59, -0.10, -0.75],
+                "values":        [0.42, 0.48, 0.55, 0.81],
+                "advantages":    [0.35, 0.35, 0.35, 0.35],
+                "returns":       [0.0, 0.0, 0.0, 0.85],
+                "token_kl":      [0.04, 0.03, 0.03, 0.08],
+                "rewards":       [0.0, 0.0, 0.0, 0.85],
+                // Per-token objective, not loss.
+                "token_objective": [0.0035, 0.0035, 0.0035, 0.007]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  // Stable key. Must match the filename (algorithms/<id>.json), the entry in algos.json,
+  // and the `algorithm` field in your training-log header.
+  "id": "myalgo",
+  "name": "MyAlgo",
+  "title": "MyAlgo",
+  // Cards rendered when the explainer first opens. Other cards show only when linked into.
+  "defaultVisibleCards": ["step-level"],
+
+  // Bindings resolve runtime values referenced by cards. Two forms:
+  //   { from: "<path>" }            — read directly from the step/response/token context
+  //   { compute: "<kind>", inputs } — derive from other bindings
+  //
+  // Supported `from` paths:
+  //   tokens.<field>        — current token's array slice (log_probs, strings, advantages, ...)
+  //   response.<field>      — the rollout-level field (reward, advantage, response_text, ...)
+  //   entry.metrics.<key>   — step-level metric from {algo}_metrics.json
+  //
+  // Supported `compute` kinds (see schema.ts ComputeKind):
+  //   exp, log, neg, neg_mul, add, sub, mul, div,
+  //   clip_mul, min, max, min_winner, array_mean, array_std
+  "bindings": {
+    "log_prob_current": { "from": "tokens.log_probs" },
+    "log_prob_old":     { "from": "tokens.old_log_probs" },
+    "advantage":        { "from": "tokens.advantages" },
+    "token_string":     { "from": "tokens.strings" },
+    "token_objective":  { "from": "tokens.token_objective" },
+    "ratio": {
+      "compute": "exp",
+      "inputs": ["log_prob_diff"]
+    },
+    "log_prob_diff": {
+      "compute": "sub",
+      "inputs": ["log_prob_current", "log_prob_old"]
+    }
+  },
+
+  "cards": [
+    {
+      "id": "step-level",
+      "title": "Step-level Objective",
+      // Position is in px relative to the card-canvas origin (0,0 = first card).
+      "position": { "x": 0, "y": 0 },
+      // Optional. `h` is auto when omitted.
+      "size": { "w": 420 },
+      "sections": [
+        {
+          "id": "per-token",
+          // Markdown allowed. Bare `term term--<termId>` classes inside KaTeX are clickable.
+          "label": "**Per-Token Objective**",
+          // KaTeX source. Wrap clickable spans with \\htmlClass{term term--<termId>}{...}.
+          "katex": "\\htmlClass{term term--ratio}{r_t}\\cdot\\htmlClass{term term--adv}{A_t}",
+          // Clicking this section opens the named card (added to visibleCards).
+          "opensCardId": "token-level",
+          // Header value rendered above the section's KaTeX.
+          "header": {
+            "binding": "token_objective",
+            "format": "decimal:3",
+            // "default" | "heatmap" — heatmap colors by sign/magnitude.
+            "style": "heatmap"
+          },
+          // Inline values rendered next to each highlighted term.
+          "termValues": {
+            "ratio": {
+              "binding": "ratio",
+              // "above" | "below" | "inline" | "replace"
+              "position": "above",
+              "format": "decimal:3"
+            },
+            "adv": {
+              "binding": "advantage",
+              "position": "above",
+              "format": "decimal:3"
+            }
+          }
+        }
+      ],
+      // Term metadata. Two roles:
+      //   1) Link: `toCardId` (+ optional `toSectionId`) opens that card on click.
+      //   2) Tooltip: `tooltip` shows on hover. Both can coexist.
+      "terms": {
+        "ratio": {
+          "toCardId": "token-level",
+          "toSectionId": "what",
+          "tooltip": "Probability ratio between current and old policy."
+        },
+        "adv": {
+          "toCardId": "token-level",
+          "toSectionId": "how",
+          "tooltip": "Advantage — how much better than baseline."
+        }
+      },
+      // Footer description, supports markdown.
+      "description": "The objective optimized at each gradient step."
+    },
+
+    {
+      "id": "token-level",
+      "title": "Token-level Objective",
+      "position": { "x": 0, "y": 200 },
+      "sections": [
+        {
+          "id": "what",
+          "label": "Ratio is what to optimize",
+          "katex": "r_t = \\exp(\\log\\pi_\\theta - \\log\\pi_{old})",
+          "header": { "binding": "ratio", "format": "decimal:3" }
+          // `compare` (optional, omitted here): puts a checkmark on one of several term
+          //   candidates based on a binding's result. See ppo.json for a real example
+          //   (used to show whether the clipped or unclipped branch won the min()).
+        }
+      ]
+    }
+  ]
+}

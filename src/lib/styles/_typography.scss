@@ -1,0 +1,129 @@
+@use "$lib/styles/tokens" as *;
+
+// ============================================================
+// Typography mixins — single source of truth
+// ============================================================
+// Size rules: minimum xs (13) / default sm (15) / larger sizes by hierarchy.
+// Tracking: all non-prose text uses -0.02em; prose (description, body) uses 0.
+//   Uppercase overline keeps +0.06em for legibility.
+// Emphasis weight is $fw-medium (500); 600/700 are not used.
+
+@mixin _non-prose {
+  letter-spacing: -0.02em;
+}
+
+@mixin _prose {
+  letter-spacing: 0;
+}
+
+// ---- Display: large numerics (Step Inspector "736"). ----
+@mixin type-display {
+  font-family: $font-sans;
+  font-size: $fs-2xl;
+  font-weight: $fw-medium;
+  line-height: $lh-tight;
+  color: $c-ink-1;
+  @include _non-prose;
+}
+
+// ---- View / Logo title (GRPO Training Explorer, Step Inspector). ----
+@mixin type-view-title {
+  font-family: $font-sans;
+  font-size: 36px;
+  font-weight: $fw-medium;
+  line-height: 1;
+  color: $c-ink-1;
+  @include _non-prose;
+}
+
+// ---- Section title (Response Examples, Training Metrics, ...). ----
+@mixin type-section-title {
+  font-family: $font-sans;
+  font-size: $fs-lg;
+  font-weight: $fw-medium;
+  line-height: $lh-tight;
+  color: $c-ink-1;
+  @include _non-prose;
+}
+
+// ---- Description: prose (subtitle under logo, card body, ...). ----
+@mixin type-description {
+  font-family: $font-sans;
+  font-size: $fs-xs;
+  font-weight: $fw-regular;
+  line-height: 1.2;
+  color: $c-ink-3;
+  @include _prose;
+}
+
+// ---- Body: general body text (prose tracking for legibility). ----
+@mixin type-body {
+  font-family: $font-sans;
+  font-size: $fs-sm;
+  font-weight: $fw-regular;
+  line-height: $lh-normal;
+  color: $c-ink-1;
+  @include _prose;
+}
+
+// ---- Mono: response tokens, formulas (prose tracking). ----
+@mixin type-mono {
+  font-family: $font-mono;
+  font-size: $fs-sm;
+  font-weight: $fw-regular;
+  line-height: $lh-normal;
+  color: $c-ink-1;
+  @include _prose;
+}
+
+// ---- Meta label (Task, Dataset, Model, ...). ----
+@mixin type-meta-label {
+  font-family: $font-sans;
+  font-size: $fs-xs;
+  font-weight: $fw-regular;
+  line-height: $lh-tight;
+  color: $c-ink-3;
+  @include _non-prose;
+}
+
+// ---- Meta value (math reasoning, GSM8K, 736). ----
+@mixin type-meta-value {
+  font-family: $font-sans;
+  font-size: $fs-xs;
+  font-weight: $fw-regular;
+  line-height: $lh-tight;
+  color: $c-ink-1;
+  @include _non-prose;
+}
+
+// ---- Data label (Prompt 1, Reward, Response Group, R1). ----
+@mixin type-data-label {
+  font-family: $font-sans;
+  font-size: $fs-xs;
+  font-weight: $fw-medium;
+  line-height: 0;
+  color: $c-ink-1;
+  @include _non-prose;
+}
+
+// ---- Chip (Algorithm Explainer, inline badges). ----
+@mixin type-chip {
+  font-family: $font-sans;
+  font-size: $fs-sm;
+  font-weight: $fw-regular;
+  line-height: 1;
+  color: $c-ink-1;
+  @include _non-prose;
+}
+
+// ---- Overline (ALGORITHM, sidebar items). ----
+// Exception: uppercase keeps positive tracking for legibility.
+@mixin type-overline {
+  font-family: $font-sans;
+  font-size: $fs-sm;
+  font-weight: $fw-normal;
+  line-height: $lh-normal;
+  color: $c-ink-3;
+  //   text-transform: uppercase;
+  //   letter-spacing: $track-wide;
+}

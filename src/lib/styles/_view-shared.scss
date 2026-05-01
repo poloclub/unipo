@@ -1,0 +1,158 @@
+@use "$lib/styles/tokens" as *;
+
+// Shared layout styles for PPO/GRPO views
+
+.view-root {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    gap: $sp-10;
+    align-items: flex-start;
+    width: 100%;
+}
+
+.left-panel {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 40%;
+    height: 100%;
+}
+
+.right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-4;
+    min-width: 0;
+    height: 100%;
+    overflow-x: auto;
+    padding-left: 2px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-2;
+}
+
+.section-header {
+    display: flex;
+    align-items: baseline;
+    gap: $sp-2;
+}
+
+.sub-label {
+    color: $c-text-muted;
+}
+
+.cards-row {
+    display: flex;
+    gap: $sp-4;
+
+    &.grouped {
+        gap: $sp-10;
+    }
+}
+
+.card-group {
+    flex: 1;
+    display: flex;
+    gap: $sp-4;
+}
+
+.card-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-1;
+}
+
+.card-label {
+    font-weight: $fw-bold;
+}
+
+$card-min-w: 300px;
+$card-gap: $sp-4;
+$group-size: 8;
+
+.card {
+    padding: $sp-4 $sp-5;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-card;
+    background: $c-white;
+    max-height: 100px;
+    min-width: $card-min-w;
+    overflow: scroll;
+    text-overflow: ellipsis;
+
+    &.prompt-card {
+        min-width: calc(
+            #{$card-min-w} * #{$group-size} + #{$card-gap} *
+                #{$group-size - 1}
+        );
+    }
+}
+
+.control-btn {
+    background: none;
+    border: 1px solid $c-gray-border;
+    border-radius: $radius-md;
+    cursor: pointer;
+    padding: $sp-1 $sp-3;
+    font-size: $fs-lg;
+    line-height: 1;
+    color: $c-black;
+
+    &:hover {
+        background: $c-gray-light;
+    }
+}
+
+.losses-section,
+.advantages-section {
+    hr {
+        width: 100%;
+        border: none;
+        border-top: 1px solid $c-gray-border;
+        margin: $sp-2 0;
+    }
+}
+
+.avg-loss-section,
+.avg-advantage-section {
+    display: flex;
+    align-items: center;
+    gap: $sp-2;
+    padding: $sp-3 $sp-5;
+    background: $c-white;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-card;
+    align-self: center;
+}
+
+.connector-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.param-label {
+    position: absolute;
+    color: $c-text-muted;
+    font-size: $fs-sm;
+    transform: translateX(-50%);
+    pointer-events: none;
+}

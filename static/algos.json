@@ -1,0 +1,29 @@
+{
+  "algos": [
+    {
+      "key": "reinforce",
+      "abbr": "REIN",
+      "fullName": "Reinforce"
+    },
+    {
+      "key": "ppo",
+      "abbr": "PPO",
+      "fullName": "PPO"
+    },
+    {
+      "key": "grpo",
+      "abbr": "GRPO",
+      "fullName": "GRPO"
+    },
+    {
+      "key": "dapo",
+      "abbr": "DAPO",
+      "fullName": "DAPO"
+    },
+    {
+      "key": "drgrpo",
+      "abbr": "DrGRPO",
+      "fullName": "Dr.GRPO"
+    }
+  ]
+}

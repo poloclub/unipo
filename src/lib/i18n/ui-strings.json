@@ -1,0 +1,261 @@
+{
+  "_comment": "Catalog of all static UI strings in the project. Algorithm explainer card text (managed in src/lib/algorithm-explainer/algorithms/*.json) is excluded. Organized by usage (component/area). Placeholders use {name} format.",
+  "common": {
+    "dash": "—"
+  },
+  "runHeader": {
+    "_path": "src/lib/RunHeader.svelte",
+    "titleSuffix": "Training Explorer",
+    "metaLabels": {
+      "task": "Task",
+      "dataset": "Dataset",
+      "baseModel": "Base Model",
+      "rewardStrategy": "Reward Strategy"
+    }
+  },
+  "page": {
+    "_path": "src/routes/+page.svelte",
+    "loadingBadge": "Loading…"
+  },
+  "radialChart": {
+    "_path": "src/lib/RadialChart.svelte",
+    "centerStepLabel": "Step",
+    "controlBar": {
+      "title": "Training Metrics",
+      "infoAriaLabel": "info",
+      "infoTooltip": {
+        "title": "Training Metrics",
+        "content": "Metric values at the current step. Click a chip to toggle a metric in the chart."
+      }
+    }
+  },
+  "runRail": {
+    "_path": "src/lib/ui/RunRail.svelte",
+    "ariaLabel": "Algorithm runs",
+    "overline": "Algorithm"
+  },
+  "detailPanel": {
+    "_path": "src/lib/detail-panel/DetailPanel.svelte",
+    "loading": "Loading step…",
+    "loadFailed": "Load failed: {error}",
+    "emptyState": "Click a step on the radial chart",
+    "noResponses": "No response data for this step",
+    "objectives": {
+      "title": "Optimization Objectives",
+      "infoAriaLabel": "info",
+      "infoTooltip": {
+        "title": "Optimization Objectives",
+        "content": "The PO update is computed in two stages: per-token contributions are aggregated into a single step-level scalar, then the policy moves one gradient step in the direction that maximizes it."
+      },
+      "tokenLevel": {
+        "label": "Token-level Objective",
+        "description": "How each token contributes to the model update.",
+        "helpDecreaseHtml": "<span class=\"down\">Low value</span> <b>decrease</b> this token’s probability;",
+        "helpIncreaseHtml": "<span class=\"up\">High value</span> <b>increase</b> it."
+      },
+      "stepLevel": {
+        "label": "Step-level Objective",
+        "description": "The token-level objectives are aggregated into a single value. The model takes one update step in the direction that maximizes it.",
+        "learnMore": "Learn more"
+      }
+    }
+  },
+  "stepHeader": {
+    "_path": "src/lib/detail-panel/StepHeader.svelte",
+    "overline": "Step Inspector",
+    "prompts": "Prompts",
+    "perStep": "per step",
+    "responses": "Responses",
+    "perPrompt": "per prompt",
+    "unitPrompt": "prompt",
+    "unitPrompts": "prompts",
+    "unitResponse": "response",
+    "unitResponses": "responses",
+    "shownBelow": "shown below",
+    "representativePrefix": "representative",
+    "promptsShownBelow": "prompts shown below",
+    "explainerButton": "How does {algorithm} work",
+    "explainerTitleHide": "Hide algorithm explainer",
+    "explainerTitleShow": "Show algorithm explainer",
+    "rolloutInfoAriaLabel": "Rollout cycle info",
+    "rolloutTooltip": {
+      "title": "Rollout Cycle",
+      "content": "A rollout cycle is one set of generated responses that the policy trains on. PO can take multiple gradient steps on the same rollouts — the policy isn't generating during these steps, only running inference to recompute log-probs, which makes the importance sampling ratio drift away from 1."
+    }
+  },
+  "responseList": {
+    "_path": "src/lib/detail-panel/ResponseList.svelte",
+    "title": "Response Examples",
+    "infoAriaLabel": "info",
+    "infoTooltip": {
+      "title": "Response Examples",
+      "content": "Sampled responses (rollouts) from the policy. Each row shows one response, color-coded by per-token contribution to the optimization update."
+    },
+    "renderModeToggle": {
+      "raw": {
+        "label": "{ }",
+        "title": "raw tokens"
+      },
+      "rendered": {
+        "label": "∑",
+        "title": "LaTeX render"
+      }
+    },
+    "promptLabel": "Prompt",
+    "promptLabelIndexed": "Prompt {n}",
+    "responseGroupLabel": "Response Group",
+    "responseLabelSingular": "Response",
+    "rewardColumn": {
+      "label": "Reward",
+      "tooltip": {
+        "title": "Reward",
+        "content": "Scalar score given by the reward model for this response. In PO, this is the primary training signal — advantage = (reward − baseline).",
+        "hint": "Higher reward → more likely to be reinforced."
+      }
+    }
+  },
+  "responseCard": {
+    "_path": "src/lib/detail-panel/ResponseCard.svelte",
+    "responseLabelTemplate": "R{n}",
+    "responseTooltip": {
+      "title": "Response {n}",
+      "content": "One sampled response from the policy for this prompt."
+    },
+    "noTokens": "no tokens",
+    "expand": {
+      "titleCollapse": "Collapse",
+      "titleExpand": "Expand full response",
+      "ariaCollapse": "Collapse response",
+      "ariaExpand": "Expand response"
+    }
+  },
+  "legendBar": {
+    "_path": "src/lib/detail-panel/LegendBar.svelte",
+    "lowAriaLabel": "low",
+    "highAriaLabel": "high",
+    "lowSymbol": "▼",
+    "highSymbol": "▲"
+  },
+  "metrics": {
+    "_path": "src/lib/radial-chart/types.ts (METRIC_LABELS), src/lib/radial-chart/metric-definitions.ts (METRIC_DEFINITIONS)",
+    "_usage": "Chart ring labels, chip label/popover (RadialChart.svelte), step metric panel tooltip (StepMetrics.svelte)",
+    "labels": {
+      "reward": "Reward",
+      "reward_std": "Reward Std",
+      "policy_objective": "Policy Objective",
+      "policy_loss": "Policy Loss",
+      "learning_rate": "Learning Rate",
+      "response_length": "Response Length",
+      "kl": "KL",
+      "ref_kl": "Ref KL",
+      "clip_fraction": "Clip Fraction",
+      "grad_norm": "Grad Norm",
+      "entropy": "Entropy",
+      "value_loss": "Value Loss",
+      "total_loss": "Total Loss",
+      "advantage_mean": "Advantage Mean",
+      "advantage_std": "Advantage Std",
+      "return": "Return",
+      "total_length": "Total Length",
+      "importance_sampling_ratio": "Importance Ratio",
+      "dynamic_sampling_pass_rate": "Dynamic Sampling Pass %"
+    },
+    "definitions": {
+      "reward": {
+        "def": "Mean reward over a step group (or batch). Scalar score for the policy's responses.",
+        "hint": "Expect an upward trend when training is going well."
+      },
+      "reward_std": {
+        "def": "Std of rewards within a step group (group_reward_std in GRPO).",
+        "hint": "If 0, all responses in the group got the same reward — advantage collapses to 0, no learning signal."
+      },
+      "policy_objective": {
+        "def": "Policy objective the optimizer is maximizing (sign-flipped policy loss). PPO/GRPO/DAPO surrogate after clipping.",
+        "hint": "Upward trend = policy improvement on the current batch."
+      },
+      "policy_loss": {
+        "def": "PPO/GRPO surrogate loss. Moving toward negative values means the policy is improving.",
+        "hint": "Small magnitude (near 0) is stable. Large swings are a blow-up signal."
+      },
+      "learning_rate": {
+        "def": "Current policy optimizer learning rate.",
+        "hint": "Typically flat after warmup, or follows a decay schedule."
+      },
+      "response_length": {
+        "def": "Mean number of tokens in a response.",
+        "hint": "Longer = more exploration. Sudden spikes may signal reward hacking."
+      },
+      "kl": {
+        "def": "Mean KL divergence between current policy π and reference policy π_ref.",
+        "hint": "If too large, the policy drifts far from the reference — risk of collapse."
+      },
+      "ref_kl": {
+        "def": "Reference-model KL (near-synonym of kl, named differently by some sources).",
+        "hint": "Redundant when viewed alongside kl."
+      },
+      "clip_fraction": {
+        "def": "Fraction of tokens whose PPO ratio fell outside the clip range.",
+        "hint": "If too high, consider adjusting learning rate or clip_eps."
+      },
+      "grad_norm": {
+        "def": "Gradient norm of the parameter update.",
+        "hint": "Spikes indicate instability. Clipping with max_norm is recommended."
+      },
+      "entropy": {
+        "def": "Mean entropy of the policy distribution.",
+        "hint": "Dropping too quickly means insufficient exploration."
+      },
+      "value_loss": {
+        "def": "Regression loss of the critic (value function). PPO only.",
+        "hint": "Watch alongside reward scale."
+      },
+      "total_loss": {
+        "def": "Sum of policy + value + entropy regularization.",
+        "hint": "Useful for inspecting component weighting."
+      },
+      "advantage_mean": {
+        "def": "Batch-mean advantage.",
+        "hint": "Near 0 is normal. A strong skew to one side suggests a normalization issue."
+      },
+      "advantage_std": {
+        "def": "Std of advantages within the batch.",
+        "hint": "0 means no learning signal."
+      },
+      "return": {
+        "def": "Mean cumulative/discounted return. In GRPO it's nearly identical to advantage.",
+        "hint": "Watch together with reward."
+      },
+      "total_length": {
+        "def": "Mean total token count (prompt + response).",
+        "hint": "Useful for checking context-budget saturation."
+      },
+      "importance_sampling_ratio": {
+        "def": "Mean Importance Sampling ratio = exp(log_prob − old_log_prob).",
+        "hint": "Drifting far from 1.0 breaks the on-policy assumption."
+      },
+      "dynamic_sampling_pass_rate": {
+        "def": "Percentage of samples that passed DAPO dynamic sampling.",
+        "hint": "Near 100% = filter too loose. Near 0% = too strict."
+      },
+      "baseline": {
+        "def": "REINFORCE baseline b — running estimate of expected reward (EMA). Subtracted from reward to form advantage = r − b.",
+        "hint": "Tracks reward closely. Used for variance reduction in REINFORCE."
+      }
+    }
+  },
+  "learningMode": {
+    "_path": "src/lib/learning-mode/script.ts (LABELS), src/lib/learning-mode/timeline.ts (beat titles)",
+    "labels": {
+      "parameterUpdate": "parameter update",
+      "policyLossFormula": "policy_loss = −mean(token_objective)"
+    },
+    "beatTitles": {
+      "givenPrompts": "Given prompts",
+      "llmGenerates": "LLM generates responses",
+      "rewardModelScores": "Reward model scores each",
+      "algoCalculatesObjective": "{ALGO} calculates token objective",
+      "aggregatePolicyLoss": "Aggregate policy loss",
+      "updateModelParameter": "Update model parameter"
+    }
+  }
+}
