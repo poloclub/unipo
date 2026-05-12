@@ -6,7 +6,7 @@
         title?: string;
         content: string;
         hint?: string;
-        placement?: "top" | "bottom";
+        placement?: "top" | "bottom" | "right" | "left";
         children: Snippet;
     }
     let {
@@ -28,38 +28,63 @@
     async function compute() {
         if (!triggerEl) return;
         const r = triggerEl.getBoundingClientRect();
-        // Compute base position, then clamp to viewport after tipEl is measured.
-        let cx = r.left + r.width / 2;
-        let cy = placement === "top" ? r.top - GAP : r.bottom + GAP;
-
+        let cx: number;
+        let cy: number;
+        if (placement === "right") {
+            cx = r.right + GAP;
+            cy = r.top + r.height / 2;
+        } else if (placement === "left") {
+            cx = r.left - GAP;
+            cy = r.top + r.height / 2;
+        } else {
+            cx = r.left + r.width / 2;
+            cy = placement === "top" ? r.top - GAP : r.bottom + GAP;
+        }
         top = cy;
         left = cx;
 
-        // Measure tipEl on next tick and adjust if it overflows the viewport.
         await Promise.resolve();
         if (!tipEl) return;
         const tr = tipEl.getBoundingClientRect();
         const vw = window.innerWidth;
-        // Horizontal clamp with 8px margin.
-        const minLeft = tr.width / 2 + 8;
-        const maxLeft = vw - tr.width / 2 - 8;
-        if (cx < minLeft) cx = minLeft;
-        if (cx > maxLeft) cx = maxLeft;
-        left = cx;
+        const vh = window.innerHeight;
 
-        // Flip to bottom if too close to the top edge (and vice versa).
-        if (placement === "top" && r.top - GAP - tr.height < 8) {
-            top = r.bottom + GAP;
-            placementActual = "bottom";
-        } else if (placement === "bottom" && r.bottom + GAP + tr.height > window.innerHeight - 8) {
-            top = r.top - GAP;
-            placementActual = "top";
+        if (placement === "top" || placement === "bottom") {
+            const minLeft = tr.width / 2 + 8;
+            const maxLeft = vw - tr.width / 2 - 8;
+            if (cx < minLeft) cx = minLeft;
+            if (cx > maxLeft) cx = maxLeft;
+            left = cx;
+
+            if (placement === "top" && r.top - GAP - tr.height < 8) {
+                top = r.bottom + GAP;
+                placementActual = "bottom";
+            } else if (placement === "bottom" && r.bottom + GAP + tr.height > vh - 8) {
+                top = r.top - GAP;
+                placementActual = "top";
+            } else {
+                placementActual = placement;
+            }
         } else {
-            placementActual = placement;
+            const minTop = tr.height / 2 + 8;
+            const maxTop = vh - tr.height / 2 - 8;
+            if (cy < minTop) cy = minTop;
+            if (cy > maxTop) cy = maxTop;
+            top = cy;
+
+            if (placement === "right" && r.right + GAP + tr.width > vw - 8) {
+                left = r.left - GAP;
+                placementActual = "left";
+            } else if (placement === "left" && r.left - GAP - tr.width < 8) {
+                left = r.right + GAP;
+                placementActual = "right";
+            } else {
+                placementActual = placement;
+            }
         }
     }
 
-    let placementActual = $state<"top" | "bottom">("top");
+    let placementActual = $state<"top" | "bottom" | "right" | "left">("top");
 
     function onEnter() {
         placementActual = placement;
@@ -68,6 +93,18 @@
     }
     function onLeave() {
         show = false;
+    }
+
+    // Move the floating tip into <body> so that ancestors with `backdrop-filter`,
+    // `transform`, `filter`, etc. (which form a containing block) don't trap our
+    // `position: fixed` element and hide it inside their stacking context.
+    function portal(node: HTMLElement) {
+        document.body.appendChild(node);
+        return {
+            destroy() {
+                if (node.parentNode) node.parentNode.removeChild(node);
+            },
+        };
     }
 </script>
 
@@ -84,10 +121,13 @@
 
 {#if show}
     <div
+        use:portal
         bind:this={tipEl}
         class="tip"
         class:top={placementActual === "top"}
         class:bottom={placementActual === "bottom"}
+        class:right={placementActual === "right"}
+        class:left={placementActual === "left"}
         style:top="{top}px"
         style:left="{left}px"
         role="tooltip"
@@ -129,6 +169,12 @@
     }
     .tip.bottom {
         transform: translate(-50%, 0);
+    }
+    .tip.right {
+        transform: translate(0, -50%);
+    }
+    .tip.left {
+        transform: translate(-100%, -50%);
     }
     .tip-title {
         font-weight: $fw-semibold;

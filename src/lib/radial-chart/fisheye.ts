@@ -197,8 +197,12 @@ function computeSegmentAngles(
  *
  * - hoverStep === null    -> identical to the natural angle scale
  * - center anchor         -> centered on hoverStep, ramps absorb displacement on both sides
- * - start anchor          -> actualStart=0 anchored to angle 0 (right ramp only)
- * - end anchor            -> actualEnd=lastStep anchored to angle 2π (left ramp only)
+ * - start anchor          -> first in-window segment's center anchored to angle 0
+ *                            (when actualStart===0, this halves segment 0 visually so
+ *                            its data point sits exactly at angle 0; otherwise the
+ *                            window's left edge is at 0)
+ * - end anchor            -> last in-window segment's center anchored to angle 2π
+ *                            (when actualEnd===lastStep, halves the last segment)
  * - Always strictly monotonic: step n < m  =>  angle(n) < angle(m).
  */
 export function createFisheyeAngle(
@@ -231,11 +235,22 @@ export function createFisheyeAngle(
 	);
 	const expandedAngle = focusFraction * Math.PI * 2;
 
+	const lastStep = totalSteps - 1;
 	let expandedRangeStart: number;
 	if (anchor === 'start') {
-		expandedRangeStart = 0;
+		// When the chart's first step is in the window, anchor segment 0's CENTER
+		// (not its left edge) at angle 0 — its left half visually clips against the
+		// boundary. This keeps step 0's data point at 12 o'clock while preserving
+		// the natural center-to-center spacing to step 1. When actualStart > 0,
+		// keep the original anchor (window left edge at 0) so step 0..actualStart-1
+		// in the natural-angle ramp remain monotonically before the window.
+		expandedRangeStart = actualStart === 0 ? -segAngles[0] / 2 : 0;
 	} else if (anchor === 'end') {
-		expandedRangeStart = Math.PI * 2 - expandedAngle;
+		const lastIdx = segAngles.length - 1;
+		expandedRangeStart =
+			actualEnd === lastStep
+				? Math.PI * 2 - expandedAngle + segAngles[lastIdx] / 2
+				: Math.PI * 2 - expandedAngle;
 	} else {
 		// center: hoverStep at window center; angle(hoverStep) preserves its natural angle.
 		const hoverAngle = stepAngle * hoverStep;

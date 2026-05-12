@@ -61,11 +61,11 @@
     //   - PPO/REINFORCE: only the clicked response is highlighted.
     // The clicked token itself is full-opacity in any algorithm; other tokens dim.
     let dimMode = $derived(!!selectedToken && dimEnabled);
-    let isGroupAlgo = $derived(
-        algorithm === "grpo" ||
-            algorithm === "drgrpo" ||
-            algorithm === "dapo",
-    );
+    // algorithm prop comes from header.algorithm (a display label), so normalize (lowercase + strip dots) before comparing.
+    let isGroupAlgo = $derived.by(() => {
+        const norm = algorithm.toLowerCase().replace(/\./g, "");
+        return norm === "grpo" || norm === "drgrpo" || norm === "dapo";
+    });
     function isRowHighlighted(responseId: string): boolean {
         if (!dimMode) return false;
         if (isGroupAlgo) return true;

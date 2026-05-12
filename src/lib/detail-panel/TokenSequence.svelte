@@ -11,6 +11,7 @@
     import "katex/dist/katex.min.css";
     import type { TokenSeries, ColorSource } from "$lib/radial-chart/types";
     import { registerAnchor } from "$lib/anchor/anchors.svelte";
+    import { strings } from "$lib/i18n/strings";
     import {
         buildTokenHeatmapScale,
         applyTokenHeatmapAlpha,
@@ -206,8 +207,9 @@
                 >{str}</span
             >{#if rolloutId && highlightSet.has(i) && tokens.values?.[i] !== undefined}<sub
                     class="v-badge"
+                    data-connect={`value-${rolloutId}-${full}`}
                     use:registerAnchor={`value-${rolloutId}-${full}`}
-                    >V={tokens.values[i].toFixed(2)}</sub
+                    >{strings.tokenSequence.vBadgePrefix}{tokens.values[i].toFixed(3)}</sub
                 >{/if}
         {/each}
     </div>
@@ -222,7 +224,7 @@
     >
         {hoverValue !== undefined && Number.isFinite(hoverValue)
             ? hoverValue.toFixed(3)
-            : "—"}
+            : strings.common.dash}
     </div>
 {/if}
 

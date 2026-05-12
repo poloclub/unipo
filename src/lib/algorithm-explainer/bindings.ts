@@ -26,10 +26,27 @@ export interface BindingContext {
 const SCOPES = ["header", "entry", "prompt", "response", "tokens"] as const;
 type Scope = (typeof SCOPES)[number];
 
+/**
+ * Resolve a binding path against a context.
+ *
+ * Path forms:
+ *   "scope.field.sub"                  Plain dotted path. Scope ∈ {header, entry,
+ *                                      prompt, response, tokens}. When the scope
+ *                                      is `tokens` and the resolved value is an
+ *                                      array, it auto-indexes by ctx.tokenIndex.
+ *   "scope.<...>[*].<sub>"             Wildcard fan-out — read sub-path from each
+ *                                      array element. e.g. prompt.responses[*].reward.
+ *   "tokens.<field>@<n>"               Token-relative offset. `n` is a signed
+ *                                      integer (e.g. @1, @-1, @3). Returns
+ *                                      array[tokenIndex + n], or null if OOB.
+ *                                      Only meaningful under the tokens scope.
+ *
+ * The offset suffix is intended for explainers that reference future/past
+ * tokens — e.g. PPO/GAE needs V_{t+1}, V_{t+2}, … to compute δ_t, δ_{t+1}, ….
+ * Add new fields to TokenSeries and they're immediately addressable as
+ * `tokens.<newField>@<offset>` without bindings.ts changes.
+ */
 export function readPath(path: string, ctx: BindingContext): unknown {
-    // Wildcard form "scope.<...>[*].<sub>": read sub-path from each array element and
-    // return as an array. Example: "prompt.responses[*].reward" → array of every
-    // response.reward in the same prompt.
     const wildIdx = path.indexOf("[*].");
     if (wildIdx !== -1) {
         const arrayPath = path.slice(0, wildIdx);
@@ -49,6 +66,17 @@ export function readPath(path: string, ctx: BindingContext): unknown {
         return out;
     }
 
+    let offset = 0;
+    const atIdx = path.lastIndexOf("@");
+    if (atIdx !== -1) {
+        const offsetStr = path.slice(atIdx + 1);
+        const parsed = parseInt(offsetStr, 10);
+        if (!Number.isNaN(parsed) && /^-?\d+$/.test(offsetStr)) {
+            offset = parsed;
+            path = path.slice(0, atIdx);
+        }
+    }
+
     const dot = path.indexOf(".");
     if (dot === -1) return null;
     const scope = path.slice(0, dot) as Scope;
@@ -60,7 +88,9 @@ export function readPath(path: string, ctx: BindingContext): unknown {
         cur = cur[seg];
     }
     if (scope === "tokens" && Array.isArray(cur)) {
-        const v = cur[ctx.tokenIndex];
+        const idx = ctx.tokenIndex + offset;
+        if (idx < 0 || idx >= cur.length) return null;
+        const v = cur[idx];
         return v ?? null;
     }
     return cur ?? null;

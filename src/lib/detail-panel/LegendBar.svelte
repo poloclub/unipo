@@ -20,14 +20,14 @@
 </script>
 
 <div class="legend">
-    <span class="lo" aria-label={strings.legendBar.lowAriaLabel}>Low</span>
+    <span class="lo" aria-label={strings.legendBar.lowAriaLabel}>{strings.legendBar.lowLabel}</span>
 
     <div class="bar">
         {#each stops as c}
             <span class="stop" style:background={c}></span>
         {/each}
     </div>
-    <span class="hi" aria-label={strings.legendBar.highAriaLabel}>High</span>
+    <span class="hi" aria-label={strings.legendBar.highAriaLabel}>{strings.legendBar.highLabel}</span>
 </div>
 
 <style lang="scss">

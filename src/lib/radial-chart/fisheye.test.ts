@@ -148,22 +148,22 @@ describe('createFisheyeAngle — edge anchor (near start)', () => {
 	const total = 10000;
 	const r = 5;
 
-	it('hover=0: focus window shifted to [0, 2r], anchored at angle 0', () => {
+	it('hover=0: segment 0 center anchored at angle 0 (halved against boundary)', () => {
 		const fn = createFisheyeAngle(total, 0, baseConfig);
-		// fn(0) should be at angle 0 + (first segment half width), not at 0 exactly
-		expect(fn(0)).toBeGreaterThan(0);
+		// Step 0's data point sits exactly at angle 0; its segment's left half
+		// clips against the boundary so the chart starts cleanly at 12 o'clock.
+		expect(fn(0)).toBeCloseTo(0, 12);
 		// fn(2r) should be close to expandedAngle (end of focus region)
 		const expandedAngle = 0.1 * Math.PI * 2;
 		expect(fn(2 * r)).toBeLessThan(expandedAngle);
-		expect(fn(2 * r)).toBeGreaterThan(expandedAngle * 0.8);
+		expect(fn(2 * r)).toBeGreaterThan(expandedAngle * 0.7);
 	});
 
-	it('hover=0 to hover=r: always anchored at angle 0 (start mode)', () => {
+	it('hover=0 to hover=r: step 0 pinned to angle 0 while window covers [0, 2r]', () => {
+		// For these hovers, actualStart=0 so segment 0 center is anchored to 0.
 		for (let h = 0; h <= r; h++) {
 			const fn = createFisheyeAngle(total, h, baseConfig);
-			// First step (0) should have positive but very small angle
-			expect(fn(0)).toBeGreaterThan(0);
-			expect(fn(0)).toBeLessThan(0.2);
+			expect(fn(0)).toBeCloseTo(0, 12);
 			// Focus should span approximately expandedAngle
 			const expandedAngle = 0.1 * Math.PI * 2;
 			expect(fn(2 * r) - fn(0)).toBeGreaterThan(expandedAngle * 0.5);
@@ -192,21 +192,20 @@ describe('createFisheyeAngle — edge anchor (near end)', () => {
 	const total = 10000;
 	const r = 5;
 
-	it('hover=last: focus anchored at angle 2π', () => {
+	it('hover=last: segment last center anchored at angle 2π (halved against boundary)', () => {
 		const fn = createFisheyeAngle(total, total - 1, baseConfig);
 		const twoPi = Math.PI * 2;
-		// fn(last) should be close to 2π (but not exceed it)
-		expect(fn(total - 1)).toBeLessThan(twoPi);
-		expect(fn(total - 1)).toBeGreaterThan(twoPi * 0.95);
+		// Step last's data point sits exactly at 2π; its segment's right half
+		// clips against the boundary, mirroring the start anchor's behavior.
+		expect(fn(total - 1)).toBeCloseTo(twoPi, 12);
 	});
 
-	it('hover in last r steps: always anchored near 2π (end mode)', () => {
+	it('hover in last r steps: step last pinned to 2π (end mode)', () => {
 		const twoPi = Math.PI * 2;
 		for (let off = 0; off <= r; off++) {
 			const h = total - 1 - off;
 			const fn = createFisheyeAngle(total, h, baseConfig);
-			expect(fn(total - 1)).toBeGreaterThan(twoPi * 0.95);
-			expect(fn(total - 1)).toBeLessThan(twoPi);
+			expect(fn(total - 1)).toBeCloseTo(twoPi, 12);
 		}
 	});
 

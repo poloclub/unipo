@@ -144,10 +144,10 @@
                 "advantage": {
                     "toCardId": "token-level",
                     "toSectionId": "how",
-                    "tooltip": "Subtracts only the group mean — no division by std. Removes the bias from std normalization that overweights groups with low reward variance."
+                    "tooltip": "Subtracts only the group mean, with no division by std. Avoids the std-normalization bias that amplifies prompts with low reward variance."
                 },
                 "clip": {
-                    "tooltip": "Clips Ratio whenever it falls outside [1−ε, 1+ε]. A safeguard that prevents the policy from shifting too far in a single step. ε is a hyperparameter (typically ~0.2)."
+                    "tooltip": "Clips Ratio whenever it falls outside [1−ε, 1+ε]. A safeguard that prevents the current model from shifting too far in a single step. ε is a hyperparameter (typically ~0.2)."
                 }
             },
             "description": "Differentiating with respect to the model parameters yields the gradients used for optimization."
@@ -226,10 +226,16 @@
             ],
             "terms": {
                 "current_model": {
-                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
+                    "tooltip": "The current model being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
                 },
                 "old_model": {
-                    "tooltip": "A frozen snapshot of the policy from the start of this update batch. Used as the Ratio denominator so the reference doesn't drift mid-update."
+                    "tooltip": "A frozen snapshot of the current model from when this response group was generated (rollout phase). Used as the Ratio denominator so the reference doesn't drift mid-update."
+                },
+                "reward_i": {
+                    "tooltip": "This response's final reward (e.g. 1 if the answer is correct, 0 otherwise). The raw signal we want to amplify."
+                },
+                "mean_group": {
+                    "tooltip": "Average reward of all responses in the same response group. Subtracting it centers the signal so above-average responses get pushed up. Dr.GRPO drops GRPO's std-normalization, which would otherwise amplify prompts with low reward variance."
                 }
             }
         }

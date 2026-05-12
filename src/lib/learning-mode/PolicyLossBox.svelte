@@ -2,6 +2,7 @@
 <script lang="ts">
     import { LABELS } from "./script";
     import { registerAnchor } from "$lib/anchor/anchors.svelte";
+    import { strings } from "$lib/i18n/strings";
 
     interface Props {
         value: number | undefined | null;
@@ -16,7 +17,7 @@
     });
 
     function fmt(v: number | undefined | null): string {
-        if (v === undefined || v === null || !Number.isFinite(v)) return "—";
+        if (v === undefined || v === null || !Number.isFinite(v)) return strings.common.dash;
         return (v >= 0 ? "" : "−") + Math.abs(v).toFixed(3);
     }
 </script>

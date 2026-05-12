@@ -103,7 +103,7 @@
 <header class="step-header">
     <div class="title-row">
         {#if step}
-            <span class="number">Step {step.step.toLocaleString()}</span>
+            <span class="number">{strings.stepHeader.stepLabel} {step.step.toLocaleString()}</span>
         {/if}
         {#if !explainerOpen}
             <button
@@ -123,7 +123,7 @@
         <span class="meta">
             {#if rolloutNumber !== null}
                 <span class="rollout-group">
-                    <span class="meta-rest">Rollout <span class="rollout-num">#{rolloutNumber}</span></span>
+                    <span class="meta-rest">{strings.stepHeader.rolloutLabel} <span class="rollout-num">#{rolloutNumber}</span></span>
                     <Tooltip
                         title={strings.stepHeader.rolloutTooltip.title}
                         content={strings.stepHeader.rolloutTooltip.content}

@@ -186,10 +186,4 @@
     .edges path.shared {
         color: $c-ink-2;
     }
-    .edges path.base-only {
-        color: $c-red;
-    }
-    .edges path.compare-only {
-        color: $c-green;
-    }
 </style>

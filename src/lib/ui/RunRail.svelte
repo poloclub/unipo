@@ -12,6 +12,11 @@
 
 <script lang="ts">
     import { strings } from "$lib/i18n/strings";
+    import logoSvg from "$lib/assets/logo.svg?raw";
+    import Tooltip from "./Tooltip.svelte";
+
+    type AlgoInfo = { year: string; description: string };
+    const algoInfo = strings.runRail.algorithms as Record<string, AlgoInfo>;
 
     interface Props {
         runs: RailRun[];
@@ -99,7 +104,7 @@
 </script>
 
 <aside class="rail" aria-label={strings.runRail.ariaLabel}>
-    <div class="overline">{strings.runRail.overline}</div>
+    <div class="brand" aria-hidden="true">{@html logoSvg}</div>
 
     <div
         class="runs"
@@ -123,21 +128,45 @@
             {:else if i > 0}
                 <span class="connector-spacer" aria-hidden="true"></span>
             {/if}
-            <button
-                type="button"
-                class="run-btn"
-                class:active={current === run.key}
-                class:disabled={run.disabled}
-                role="tab"
-                aria-selected={current === run.key}
-                aria-disabled={run.disabled || undefined}
-                disabled={run.disabled || (loading && current !== run.key)}
-                bind:this={btnRefs[run.key]}
-                onclick={() => !run.disabled && onSelect(run.key)}
-                onkeydown={(e) => handleRunKeydown(e, run, i)}
-            >
-                <span class="name">{displayName(run)}</span>
-            </button>
+            {#if algoInfo[run.key]}
+                <Tooltip
+                    placement="right"
+                    title={`${displayName(run)} (${algoInfo[run.key].year})`}
+                    content={algoInfo[run.key].description}
+                >
+                    <button
+                        type="button"
+                        class="run-btn"
+                        class:active={current === run.key}
+                        class:disabled={run.disabled}
+                        role="tab"
+                        aria-selected={current === run.key}
+                        aria-disabled={run.disabled || undefined}
+                        disabled={run.disabled || (loading && current !== run.key)}
+                        bind:this={btnRefs[run.key]}
+                        onclick={() => !run.disabled && onSelect(run.key)}
+                        onkeydown={(e) => handleRunKeydown(e, run, i)}
+                    >
+                        <span class="name">{displayName(run)}</span>
+                    </button>
+                </Tooltip>
+            {:else}
+                <button
+                    type="button"
+                    class="run-btn"
+                    class:active={current === run.key}
+                    class:disabled={run.disabled}
+                    role="tab"
+                    aria-selected={current === run.key}
+                    aria-disabled={run.disabled || undefined}
+                    disabled={run.disabled || (loading && current !== run.key)}
+                    bind:this={btnRefs[run.key]}
+                    onclick={() => !run.disabled && onSelect(run.key)}
+                    onkeydown={(e) => handleRunKeydown(e, run, i)}
+                >
+                    <span class="name">{displayName(run)}</span>
+                </button>
+            {/if}
         {/each}
 
         {#if skipPath}
@@ -174,6 +203,26 @@
             </svg>
         {/if}
     </div>
+
+    <a
+        class="github-link"
+        href="https://github.com/poloclub/unipo"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={strings.runRail.githubAriaLabel}
+    >
+        <svg
+            width="30"
+            height="30"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+        >
+            <path
+                d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.16-.02-2.1-3.2.69-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.34.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.21-1.5 3.18-1.18 3.18-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.68.8.56C20.22 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z"
+            />
+        </svg>
+    </a>
 </aside>
 
 <style lang="scss">
@@ -184,15 +233,22 @@
         display: flex;
         flex-direction: column;
         align-items: stretch;
-        padding: $sp-5 $sp-4 $sp-4;
+        padding: $sp-5 $sp-4 $sp-6;
         gap: $sp-3;
         background: #f4f5f7;
         border-left: 1px solid $c-line;
     }
 
-    .overline {
-        @include type-overline;
-        text-align: center;
+    .brand {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        :global(svg) {
+            display: block;
+            height: auto;
+            max-width: 100%;
+        }
     }
 
     .runs {
@@ -289,6 +345,26 @@
         overflow: hidden;
         text-overflow: clip;
         white-space: nowrap;
+    }
+
+    .github-link {
+        align-self: center;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ea2adb2;
+        padding: $sp-1;
+        border-radius: $radius-sm;
+        transition: color 120ms ease;
+
+        &:hover,
+        &:focus-visible {
+            color: #9ea2adf0;
+        }
+
+        svg {
+            display: block;
+        }
     }
 
 </style>

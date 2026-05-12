@@ -241,8 +241,8 @@
             }
 
             // Fan-in: each source → junction (branch), junction → anchor (trunk).
-            // Junction sits at the source centroid nudged toward the destination,
-            // i.e. close to the sources. A 40px floor keeps branches from collapsing.
+            // Default junction sits ~80px from sources (short branches, long trunk).
+            // junctionPosition (0..1) overrides this: fraction along source→target.
             // buildPath's tangents at both ends are horizontal so branches and trunk
             // join smoothly at the junction.
             const cx = sources.reduce((s, x) => s + x.pt.x, 0) / sources.length;
@@ -250,7 +250,9 @@
             const dx = tx - cx;
             const dy = ty - cy;
             const dist = Math.hypot(dx, dy);
-            const ratio = dist > 0 ? Math.max(0.1, 80 / dist) : 0;
+            const ratio = c.junctionPosition !== undefined
+                ? Math.max(0, Math.min(1, c.junctionPosition))
+                : dist > 0 ? Math.max(0.1, 80 / dist) : 0;
             const jx = cx + ratio * dx;
             const jy = cy + ratio * dy;
 

@@ -99,6 +99,21 @@ describe("readPath", () => {
         const ctx2 = { ...ctx, tokens: { count: 3 } as any };
         expect(readPath("tokens.count", ctx2)).toBe(3);
     });
+    it("tokens.<field>@<offset> reads at tokenIndex + offset", () => {
+        // tokenIndex = 1, log_probs = [-0.2, -0.5, -0.1]
+        expect(readPath("tokens.log_probs@1", ctx)).toBe(-0.1);
+        expect(readPath("tokens.log_probs@-1", ctx)).toBe(-0.2);
+        expect(readPath("tokens.log_probs@0", ctx)).toBe(-0.5);
+    });
+    it("tokens.<field>@<offset> returns null when out of bounds", () => {
+        expect(readPath("tokens.log_probs@5", ctx)).toBeNull();
+        expect(readPath("tokens.log_probs@-5", ctx)).toBeNull();
+    });
+    it("@ in path without integer offset is treated as part of the path", () => {
+        // No valid offset → no offset consumed; the `@`-bearing segment then
+        // fails to resolve, returning null. (Defensive; callers shouldn't use `@` in field names.)
+        expect(readPath("tokens.log_probs@foo", ctx)).toBeNull();
+    });
 });
 
 import { evaluate } from "./bindings";

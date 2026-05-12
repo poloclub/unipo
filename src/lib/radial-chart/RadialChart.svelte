@@ -246,15 +246,14 @@
         return vis / VISIBLE_SCALE;
     }
 
-    // step → point angle. Only step 0 / last are snapped to their segment's left/right edge
-    // so the start/end points sit exactly at 12 o'clock and the final position.
+    // step → point angle. Always the segment's center; createFisheyeAngle puts the
+    // center of segment 0 / segment last directly on the chart boundary (angle 0 / 2π)
+    // when those steps are in the focus window, so their visible segment is halved
+    // against the boundary while center-to-center spacing to neighbors stays natural.
     function pointAngle(stepIdx: number): number {
         if (focusStep === null) return fisheyeAngleFn(stepIdx);
         const seg = fisheyeSegs.find((s) => s.step === stepIdx);
         if (!seg) return fisheyeAngleFn(stepIdx);
-        if (stepIdx === 0) return seg.centerAngle - seg.halfArc;
-        if (stepIdx === steps.length - 1)
-            return seg.centerAngle + seg.halfArc;
         return seg.centerAngle;
     }
 
@@ -339,8 +338,8 @@
     // Rollout band: a thin concentric ring drawn just inside the innermost ring.
     //   BAND_OFFSET: chart-coord units (innermostR=150 → drawn at 142).
     //   BAND_HIT_HALF: tooltip hover hit radius (±) including stroke + visual margin.
-    const ROLLOUT_BAND_OFFSET = 8;
-    const ROLLOUT_BAND_HIT_HALF = 7;
+    const ROLLOUT_BAND_OFFSET = 10;
+    const ROLLOUT_BAND_HIT_HALF = 9;
     let rolloutBandR = $derived(innermostR - ROLLOUT_BAND_OFFSET);
 
     /**
@@ -714,23 +713,23 @@
                                 d={svgArc(startVis, endVis, bandView)}
                                 fill="none"
                                 stroke="#e2e2e2"
-                                stroke-width="6"
+                                stroke-width="10"
                                 stroke-linecap="butt"
                             />
-                            <!-- Rollout cycle start tick — only when the group's first
-                                 visible step is the actual rollout start (skip when fisheye
-                                 enters the cycle mid-way). -->
+                            <!-- Rollout cycle start tick — radial spike crossing the band.
+                                 Only when the group's first visible step is the actual rollout
+                                 start (skip when fisheye enters the cycle mid-way). -->
                             {#if g.firstStep === g.rolloutSegStartIdx}
-                                {@const tickIn = angleToXY(startVis, bandView )}
-                                {@const tickOut = angleToXY(startVis, bandView)}
+                                {@const tickIn = angleToXY(startVis, bandView - 9)}
+                                {@const tickOut = angleToXY(startVis, bandView + 9)}
                                 <line
                                     x1={tickIn.x}
                                     y1={tickIn.y}
                                     x2={tickOut.x}
                                     y2={tickOut.y}
                                     stroke="#3a3a3a"
-                                    stroke-width="6"
-                                    stroke-linecap="round"
+                                    stroke-width="2.5"
+                                    stroke-linecap="butt"
                                 />
                             {/if}
                         {/if}

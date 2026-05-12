@@ -43,6 +43,12 @@ export interface Connection {
      * attribute. The trunk uses the branch-opacity average. `opacity` is ignored.
      */
     opacityFromSource?: boolean;
+    /**
+     * Fan-in junction position along the source-centroid → target line, 0..1.
+     * 0 = at source centroid (long trunk), 1 = at target (long branches).
+     * Omitted: junction sits ~80px from sources (default short-branch behavior).
+     */
+    junctionPosition?: number;
 }
 
 // id → Connection. Only point mutations on the SvelteMap — avoid full

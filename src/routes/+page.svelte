@@ -176,12 +176,15 @@
                 toClipSel: clip,
                 fromClipSel: `[data-rollout-clip="${sel.rolloutId}"]`,
                 fromVClipSel: ROLLOUT_CLIP,
-                color: "#1e4d8c", // $c-blue-strong
+                color: "#171717", // black, faint
                 dasharray: "4 3",
+                opacity: 0.35,
             });
 
+            // header.algorithm is a display label (e.g. "Dr.GRPO"), so normalize (lowercase + strip dots) before comparing.
+            const algoNorm = algo.toLowerCase().replace(/\./g, "");
             const isGroup =
-                algo === "grpo" || algo === "drgrpo" || algo === "dapo";
+                algoNorm === "grpo" || algoNorm === "drgrpo" || algoNorm === "dapo";
             const rewardResponses = isGroup
                 ? responses.map((r) => r.id)
                 : [sel.rolloutId];
@@ -203,12 +206,44 @@
                 colorFromSource: true,
                 opacityFromSource: true,
             });
+
+            // PPO only: V badges on future tokens fan into the GAE/Advantage box.
+            //   GAE consumes Value(t..t+N) to compute δ_t..δ_{t+N}, so each badge is a
+            //   distinct input. Amber dotted to separate from token-ratio (blue dashed)
+            //   and reward-adv (green-tinted).
+            if (algo === "ppo") {
+                const response = responses.find((r) => r.id === sel.rolloutId);
+                const values = response?.tokens?.values;
+                if (values) {
+                    const valueSels: string[] = [];
+                    for (let i = sel.tokenIndex; i < values.length; i++) {
+                        if (Number.isFinite(values[i] as number)) {
+                            valueSels.push(`[data-connect="value-${sel.rolloutId}-${i}"]`);
+                        }
+                    }
+                    if (valueSels.length > 0) {
+                        setConnection({
+                            id: "value-gae",
+                            fromSel: valueSels.length === 1 ? valueSels[0] : valueSels,
+                            toSel: advTo,
+                            toClipSel: clip,
+                            fromClipSel: `[data-rollout-clip="${sel.rolloutId}"]`,
+                            fromVClipSel: ROLLOUT_CLIP,
+                            color: "#4a86cf", // $c-blue, matches V-badge border
+                            dasharray: "1 2",
+                            junctionPosition: 0.5,
+                            opacity:1
+                        });
+                    }
+                }
+            }
         });
 
         return () => {
             untrack(() => {
                 removeConnection("token-ratio");
                 removeConnection("reward-adv");
+                removeConnection("value-gae");
             });
         };
     });

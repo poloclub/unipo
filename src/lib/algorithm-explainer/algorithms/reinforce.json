@@ -12,9 +12,6 @@
         "reward": {
             "from": "response.reward"
         },
-        "baseline": {
-            "from": "entry.metrics.baseline"
-        },
         "token_string": {
             "from": "tokens.strings"
         },
@@ -22,10 +19,13 @@
             "from": "tokens.token_objective"
         },
         "reward_minus_baseline": {
+            "from": "response.advantage"
+        },
+        "baseline": {
             "compute": "sub",
             "inputs": [
                 "reward",
-                "baseline"
+                "reward_minus_baseline"
             ]
         }
     },
@@ -89,7 +89,7 @@
                     "tooltip": "The response's reward minus the baseline. Positive if better than average, negative if worse. Decides how strongly to update."
                 },
                 "current_model": {
-                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its log-probability for this token is what we maximize."
+                    "tooltip": "The current model being trained — its parameters are updated each gradient step. Its log-probability for this token is what we maximize."
                 }
             },
             "description": "Differentiating with respect to the model parameters yields the gradients used for optimization."
@@ -141,12 +141,30 @@
                         "binding": "reward_minus_baseline",
                         "format": "decimal:3"
                     },
-                    "katex": "\\text{Reward} - \\text{Baseline}"
+                    "katex": "\\htmlClass{term term--reward}{\\text{Reward}} - \\htmlClass{term term--baseline}{\\text{Baseline}}",
+                    "termValues": {
+                        "reward": {
+                            "binding": "reward",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "baseline": {
+                            "binding": "baseline",
+                            "position": "above",
+                            "format": "decimal:3"
+                        }
+                    }
                 }
             ],
             "terms": {
                 "current_model": {
-                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its log-probability for this token is what we maximize."
+                    "tooltip": "The current model being trained — its parameters are updated each gradient step. Its log-probability for this token is what we maximize."
+                },
+                "reward": {
+                    "tooltip": "Final reward of this response — the raw signal we want to amplify."
+                },
+                "baseline": {
+                    "tooltip": "A reference value (typically the running mean reward) subtracted to cut variance. With non-negative rewards it also flips below-average responses to negative updates instead of all-positive pushes."
                 }
             }
         }

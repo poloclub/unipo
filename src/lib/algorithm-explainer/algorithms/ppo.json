@@ -77,6 +77,42 @@
                 "beta",
                 "kl_token"
             ]
+        },
+        "value_t_v": {
+            "from": "tokens.values"
+        },
+        "value_t1_v": {
+            "from": "tokens.values@1"
+        },
+        "reward_t_v": {
+            "from": "tokens.rewards"
+        },
+        "gamma_v": {
+            "from": "header.hparams.gamma"
+        },
+        "lambda_v": {
+            "from": "header.hparams.gae_lambda"
+        },
+        "gv_t1_v": {
+            "compute": "mul",
+            "inputs": [
+                "gamma_v",
+                "value_t1_v"
+            ]
+        },
+        "r_plus_gv_t_v": {
+            "compute": "add",
+            "inputs": [
+                "reward_t_v",
+                "gv_t1_v"
+            ]
+        },
+        "delta_t_v": {
+            "compute": "sub",
+            "inputs": [
+                "r_plus_gv_t_v",
+                "value_t_v"
+            ]
         }
     },
     "cards": [
@@ -139,10 +175,10 @@
                 "advantage": {
                     "toCardId": "token-level",
                     "toSectionId": "how",
-                    "tooltip": "Advantage computed via GAE. The discounted sum of future rewards minus the current value estimate, capturing the value beyond this token. Decides how strongly to update."
+                    "tooltip": "Advantage computed via GAE: a discounted sum of TD errors. Roughly, how much better the outcome turned out than the value model expected. Decides how strongly to update."
                 },
                 "clip": {
-                    "tooltip": "Clips Ratio whenever it falls outside [1−ε, 1+ε]. A safeguard that prevents the policy from shifting too far in a single step. ε is a hyperparameter (typically ~0.2)."
+                    "tooltip": "Clips Ratio whenever it falls outside [1−ε, 1+ε]. A safeguard that prevents the current model from shifting too far in a single step. ε is a hyperparameter (typically ~0.2)."
                 }
             },
             "description": "Differentiating with respect to the model parameters yields the gradients used for optimization."
@@ -209,15 +245,83 @@
                         "binding": "advantage",
                         "format": "decimal:3"
                     },
-                    "katex": "\\begin{aligned} &\\delta_t = \\text{Reward}_t + \\gamma\\cdot\\text{Value}_{t+1} - \\text{Value}_t \\\\ &\\text{Advantage} = \\delta_t + (\\gamma\\lambda)^1\\,\\delta_{t+1} + (\\gamma\\lambda)^2\\,\\delta_{t+2} + \\cdots + (\\gamma\\lambda)^N\\,\\delta_{t+N} \\end{aligned}"
+                    "katex": "\\begin{aligned} &\\htmlClass{term term--delta_t_top}{\\delta_t} = \\htmlClass{term term--reward_t}{\\text{Reward}_t} + \\htmlClass{term term--gamma_top}{\\gamma}\\cdot\\htmlClass{term term--value_t1}{\\text{Value}_{t+1}} - \\htmlClass{term term--value_t}{\\text{Value}_t} \\\\ &\\htmlClass{term term--advantage_sum}{\\text{Advantage}} = \\htmlClass{term term--delta_t}{\\delta_t} + (\\htmlClass{term term--gamma}{\\gamma}\\htmlClass{term term--lambda_first}{\\lambda})^1\\,\\htmlClass{term term--delta_t1}{\\delta_{t+1}} + (\\htmlClass{term term--gamma}{\\gamma}\\htmlClass{term term--lambda}{\\lambda})^2\\,\\htmlClass{term term--delta_t2}{\\delta_{t+2}} + \\cdots + (\\htmlClass{term term--gamma}{\\gamma}\\htmlClass{term term--lambda}{\\lambda})^N\\,\\delta_{t+N} \\end{aligned}",
+                    "termValues": {
+                        "delta_t_top": {
+                            "binding": "delta_t_v",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "reward_t": {
+                            "binding": "reward_t_v",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "gamma_top": {
+                            "binding": "gamma_v",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "value_t1": {
+                            "binding": "value_t1_v",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "value_t": {
+                            "binding": "value_t_v",
+                            "position": "above",
+                            "format": "decimal:3"
+                        },
+                        "lambda_first": {
+                            "binding": "lambda_v",
+                            "position": "below",
+                            "format": "decimal:3"
+                        }
+                    }
                 }
             ],
             "terms": {
                 "current_model": {
-                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
+                    "tooltip": "The current model being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
                 },
                 "old_model": {
-                    "tooltip": "A frozen snapshot of the policy from the start of this update batch. Used as the Ratio denominator so the reference doesn't drift mid-update."
+                    "tooltip": "A frozen snapshot of the current model from when this response group was generated (rollout phase). Used as the Ratio denominator so the reference doesn't drift mid-update."
+                },
+                "reward_t": {
+                    "tooltip": "Reward at step t. In LLM tasks it is usually 0 except at the final token; GAE uses the value model to spread that final signal back to earlier tokens."
+                },
+                "value_t": {
+                    "tooltip": "Value model's prediction of expected future reward from this token position. Acts as the baseline so we only learn from outcomes that beat the prediction."
+                },
+                "value_t1": {
+                    "tooltip": "Value model's prediction at the next token. Combined with the immediate reward to form a bootstrapped estimate of the return expected from step t."
+                },
+                "gamma": {
+                    "tooltip": "Discount factor (0–1). Controls how far into the future rewards still matter. Lower γ = the model cares less about distant future rewards."
+                },
+                "gamma_top": {
+                    "tooltip": "Discount factor (0–1). Controls how far into the future rewards still matter. Lower γ = the model cares less about distant future rewards."
+                },
+                "lambda": {
+                    "tooltip": "GAE bias-variance knob (0–1). λ=1 = use the full future reward (less biased but noisier). λ=0 = use only the next step (less noisy but more biased). Picks a middle ground."
+                },
+                "lambda_first": {
+                    "tooltip": "GAE bias-variance knob (0–1). λ=1 = use the full future reward (less biased but noisier). λ=0 = use only the next step (less noisy but more biased). Picks a middle ground."
+                },
+                "delta_t": {
+                    "tooltip": "TD error at step t: how much this step beat the value model's prediction. The atomic 'surprise' signal that GAE accumulates."
+                },
+                "delta_t_top": {
+                    "tooltip": "TD error at step t: how much this step beat the value model's prediction. The atomic 'surprise' signal that GAE accumulates."
+                },
+                "delta_t1": {
+                    "tooltip": "TD error one step into the future. GAE down-weights it by γλ to fold its surprise into the current advantage."
+                },
+                "delta_t2": {
+                    "tooltip": "TD error two steps ahead, down-weighted by (γλ)². Far-future surprises contribute exponentially less."
+                },
+                "advantage_sum": {
+                    "tooltip": "Discounted sum of TD errors over future steps. Combines many noisy single-step signals into one credit value — more stable than raw returns, less biased than the value model alone."
                 }
             }
         }

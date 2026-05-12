@@ -244,10 +244,19 @@
             ],
             "terms": {
                 "current_model": {
-                    "tooltip": "The policy being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
+                    "tooltip": "The current model being trained — its parameters are updated each gradient step. Its probability for the token is the numerator of Ratio."
                 },
                 "old_model": {
-                    "tooltip": "A frozen snapshot of the policy from the start of this update batch. Used as the Ratio denominator so the reference doesn't drift mid-update."
+                    "tooltip": "A frozen snapshot of the current model from when this response group was generated (rollout phase). Used as the Ratio denominator so the reference doesn't drift mid-update."
+                },
+                "reward_i": {
+                    "tooltip": "This response's final reward (e.g. 1 if the answer is correct, 0 otherwise). The raw signal we want to amplify."
+                },
+                "mean_group": {
+                    "tooltip": "Average reward of all responses in the same response group. Subtracting it centers the signal — only above-average responses get pushed up, below-average get pushed down."
+                },
+                "std_group": {
+                    "tooltip": "Reward spread within the response group. Dividing by it normalizes scale, so easy prompts and hard prompts contribute comparably to the gradient."
                 }
             }
         }
