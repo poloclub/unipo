@@ -295,4 +295,22 @@
         opacity: 0.3;
         transition: opacity 180ms ease;
     }
+
+    // Compact layout: no inner scroll area — the list is part of the page scroll.
+    @include compact {
+        .response-list,
+        .scroll-wrap {
+            flex: none;
+        }
+        .scroll-area {
+            height: auto;
+            overflow-y: visible;
+        }
+        .scroll-fade {
+            display: none;
+        }
+        .prompt-group {
+            padding-right: 0;
+        }
+    }
 </style>

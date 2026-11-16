@@ -18,6 +18,12 @@
          * switches to "(representative N prompts shown below)".
          */
         promptsShownCount?: number;
+        /**
+         * Previous / next step buttons next to the step number. Used in the compact
+         * layout, where picking an exact step on the chart with a finger is imprecise.
+         * A missing handler disables that direction.
+         */
+        stepNav?: { onPrev?: () => void; onNext?: () => void };
     }
     let {
         step,
@@ -27,6 +33,7 @@
         onAlgorithmExplainer,
         rolloutNumber = null,
         promptsShownCount,
+        stepNav,
     }: Props = $props();
 
     let explainerLabel = $derived(
@@ -104,6 +111,34 @@
     <div class="title-row">
         {#if step}
             <span class="number">Step {step.step.toLocaleString()}</span>
+            {#if stepNav}
+                <span class="step-nav">
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        onclick={stepNav.onPrev}
+                        disabled={!stepNav.onPrev}
+                        aria-label={strings.stepHeader.prevStep}
+                        title={strings.stepHeader.prevStep}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M10 3 L5 8 L10 13" />
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="nav-btn"
+                        onclick={stepNav.onNext}
+                        disabled={!stepNav.onNext}
+                        aria-label={strings.stepHeader.nextStep}
+                        title={strings.stepHeader.nextStep}
+                    >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M6 3 L11 8 L6 13" />
+                        </svg>
+                    </button>
+                </span>
+            {/if}
         {/if}
         {#if !explainerOpen}
             <button
@@ -212,6 +247,43 @@
         justify-content: center;
         color: $c-ink-3;
         cursor: help;
+    }
+
+    .step-nav {
+        display: inline-flex;
+        gap: $sp-1;
+        margin-right: auto;
+    }
+    .nav-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        background: $c-surface;
+        border: 1px solid $c-line;
+        border-radius: $radius-md;
+        color: $c-ink-2;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    }
+
+    @include compact {
+        .step-header {
+            padding-bottom: $sp-4;
+        }
+        .title-row {
+            flex-wrap: wrap;
+            gap: $sp-2 $sp-3;
+        }
+        .explainer-btn {
+            min-height: 36px;
+        }
     }
 
     .explainer-btn {

@@ -20,6 +20,7 @@
   "radialChart": {
     "_path": "src/lib/RadialChart.svelte",
     "centerStepLabel": "Step",
+    "touchHint": "Tap the ring to pick a step. Press and hold, then drag to scrub.",
     "controlBar": {
       "title": "Training Metrics",
       "infoAriaLabel": "info",
@@ -63,6 +64,8 @@
   "stepHeader": {
     "_path": "src/lib/detail-panel/StepHeader.svelte",
     "overline": "Step Inspector",
+    "prevStep": "Previous step",
+    "nextStep": "Next step",
     "prompts": "Prompts",
     "perStep": "per step",
     "responses": "Responses",
@@ -241,6 +244,16 @@
         "def": "REINFORCE baseline b — running estimate of expected reward (EMA). Subtracted from reward to form advantage = r − b.",
         "hint": "Tracks reward closely. Used for variance reduction in REINFORCE."
       }
+    }
+  },
+  "algorithmExplainer": {
+    "_path": "src/lib/algorithm-explainer/AlgorithmExplainer.svelte",
+    "tokenSummary": {
+      "label": "Selected token",
+      "response": "R{n}",
+      "reward": "reward {value}",
+      "objective": "objective {value}",
+      "empty": "Close this view and tap a token in a response to see its numbers in the formulas."
     }
   },
   "learningMode": {

@@ -23,10 +23,20 @@
     interface Props {
         slotValues?: Map<string, string>;
         tokenObjectiveColor?: string | null;
+        /**
+         * Fit the cards to the viewport every time the canvas mounts and whenever the set
+         * of visible cards changes, instead of restoring the stored pan/zoom. Used by the
+         * compact layout, where the canvas is a full-screen sheet on a small screen.
+         */
+        autoFit?: boolean;
+        /** Height (px) at the top of the viewport that fitted cards must stay clear of. */
+        fitTopInset?: number;
     }
     let {
         slotValues = new Map(),
         tokenObjectiveColor = null,
+        autoFit = false,
+        fitTopInset = 0,
     }: Props = $props();
 
     let viewportEl: HTMLDivElement | undefined = $state();
@@ -125,13 +135,22 @@
                 size: r ? { w: r.width / k, h: r.height / k } : undefined,
             };
         });
-        // Use setTransform so the result is persisted.
-        setTransform(
-            fitToView(measured, vp, {
-                padding: 24,
-                scaleExtent: SCALE_RANGE,
-            }),
+        // Fit inside the area below the top inset, then shift down by the inset.
+        const inset = Math.min(fitTopInset, vp.height / 2);
+        const fitted = fitToView(
+            measured,
+            { width: vp.width, height: vp.height - inset },
+            { padding: autoFit ? 12 : 24, scaleExtent: SCALE_RANGE },
         );
+        let y = fitted.y + inset;
+        if (autoFit) {
+            // Start right below the inset instead of centering, so that the first card
+            // sits next to the header it belongs to.
+            const top = Math.min(...measured.map((c) => c.position.y));
+            y = Math.min(y, inset + 12 - fitted.k * top);
+        }
+        // Use setTransform so the result is persisted.
+        setTransform({ ...fitted, y });
     }
 
     function onReset() {
@@ -316,8 +335,20 @@
             algoExplainer.transform.k !== 1;
 
         const handle = window.setTimeout(() => {
-            if (!hasStored) measuredFit();
+            if (!hasStored || autoFit) measuredFit();
             didInitialFit = true;
+        }, COLUMN_TRANSITION_MS);
+        return () => clearTimeout(handle);
+    });
+
+    // autoFit: fit again when a card is added or removed, after the collision resolver
+    // has had time to place it.
+    const visibleCardKey = $derived(diffView.cards.map((c) => c.id).join("|"));
+    $effect(() => {
+        void visibleCardKey;
+        if (!autoFit) return;
+        const handle = window.setTimeout(() => {
+            if (didInitialFit) measuredFit();
         }, COLUMN_TRANSITION_MS);
         return () => clearTimeout(handle);
     });
@@ -349,6 +380,8 @@
         overflow: hidden;
         background: transparent;
         cursor: grab;
+        // Lets d3-zoom receive one-finger pan and two-finger pinch instead of the browser.
+        touch-action: none;
         &:active {
             cursor: grabbing;
         }

@@ -148,3 +148,13 @@ $c-text-faint: $c-ink-3; // legacy 0.23 alpha violated 4.5:1; forced up to ink-3
 $c-text-hover: $c-ink-1;
 
 $fw-normal: $fw-regular;
+
+// ---- Breakpoint ----
+// Compact layout (phones, small tablets, narrow windows): the panes stack vertically
+// and the page scrolls. The second query catches a phone held in landscape.
+// Keep the query in sync with COMPACT_QUERY in src/lib/ui/viewport.svelte.ts.
+@mixin compact {
+  @media (max-width: 899px), (max-height: 599px) and (pointer: coarse) {
+    @content;
+  }
+}

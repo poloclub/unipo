@@ -12,6 +12,7 @@
 
 <script lang="ts">
     import { strings } from "$lib/i18n/strings";
+    import { viewport } from "./viewport.svelte";
 
     interface Props {
         runs: RailRun[];
@@ -84,9 +85,12 @@
             onSelect(run.key);
             return;
         }
-        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        // The rail is vertical on desktop and a horizontal tab strip in the compact layout.
+        const nextKey = viewport.compact ? "ArrowRight" : "ArrowDown";
+        const prevKey = viewport.compact ? "ArrowLeft" : "ArrowUp";
+        if (e.key === nextKey || e.key === prevKey) {
             e.preventDefault();
-            const dir = e.key === "ArrowDown" ? 1 : -1;
+            const dir = e.key === nextKey ? 1 : -1;
             let j = idx + dir;
             while (j >= 0 && j < runs.length && runs[j].disabled) j += dir;
             if (j < 0 || j >= runs.length) return;
@@ -104,7 +108,7 @@
     <div
         class="runs"
         role="tablist"
-        aria-orientation="vertical"
+        aria-orientation={viewport.compact ? "horizontal" : "vertical"}
         bind:this={runsEl}
     >
         {#each runs as run, i (run.key)}
@@ -289,6 +293,42 @@
         overflow: hidden;
         text-overflow: clip;
         white-space: nowrap;
+    }
+
+    // Compact layout: a horizontal tab strip pinned to the top of the page.
+    // The lineage arrows between runs are drawn for a vertical list, so they are hidden.
+    @include compact {
+        .rail {
+            order: -1;
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            width: 100%;
+            height: auto;
+            padding: $sp-2 $sp-3;
+            border-left: none;
+            border-bottom: 1px solid $c-line;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .overline,
+        .connector,
+        .connector-spacer,
+        .skip-arrow {
+            display: none;
+        }
+        .runs {
+            flex: none;
+            flex-direction: row;
+            gap: 6px;
+        }
+        .run-btn {
+            flex: 1 0 auto;
+            width: auto;
+            min-height: 36px;
+            padding: 6px $sp-2;
+            font-size: 13px;
+        }
     }
 
 </style>

@@ -80,7 +80,10 @@
     let hover = $state<{ index: number; left: number; top: number } | null>(
         null,
     );
-    function onTokEnter(e: MouseEvent, i: number) {
+    // Mouse only: a finger has no hover, and the touch-generated enter event would leave
+    // the tooltip stuck on screen with no matching leave event.
+    function onTokEnter(e: PointerEvent, i: number) {
+        if (e.pointerType !== "mouse") return;
         const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
         hover = {
             index: i,
@@ -188,8 +191,8 @@
                     : ""}
                 role={onTokenClick && rolloutId ? "button" : undefined}
                 tabindex={onTokenClick && rolloutId ? 0 : undefined}
-                onmouseenter={(e) => onTokEnter(e, i)}
-                onmouseleave={onTokLeave}
+                onpointerenter={(e) => onTokEnter(e, i)}
+                onpointerleave={onTokLeave}
                 onclick={(e) => {
                     if (!onTokenClick || !rolloutId) return;
                     e.stopPropagation();

@@ -30,6 +30,7 @@
     import { Badge, RunRail } from "$lib/ui";
     import type { RailRun } from "$lib/ui";
     import { strings } from "$lib/i18n/strings";
+    import { viewport } from "$lib/ui/viewport.svelte";
     import {
         loadDapoStep,
         loadRealAlgo,
@@ -290,6 +291,20 @@
 
     const algoOpen = $derived(algoExplainer.open);
 
+    // Compact layout (phones, narrow windows): the panes stack vertically, the page
+    // scrolls, and the explainer opens as a full-screen sheet over the page.
+    const compact = $derived(viewport.compact);
+
+    // While the sheet covers the page, the page behind it must not scroll.
+    $effect(() => {
+        if (!compact || !algoOpen) return;
+        const prev = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = prev;
+        };
+    });
+
     // Slide layout gate. On close, delay ~2 frames so dim/line cleanup paints before the
     // slide transition starts. On open, immediate.
     //   - dim/lines are torn down as soon as algoOpen drops;
@@ -349,6 +364,31 @@
         if (v == null || !Number.isFinite(v)) return null;
         const all = step.prompts?.flatMap((g) => g.responses) ?? [];
         return tokenHeatmapColor(v, robustTokenObjectiveDomain(all));
+    });
+
+    // In the compact layout the sheet hides the response list, so the lines that connect
+    // a token to the explainer cards cannot be drawn. This summary of the selected token
+    // is shown at the top of the sheet instead.
+    let tokenSummary = $derived.by(() => {
+        const sel = selectedToken;
+        const step = selectedStep;
+        if (!sel || !step) return null;
+        let n = 0;
+        for (const group of step.prompts ?? []) {
+            for (const response of group.responses) {
+                n++;
+                if (response.id !== sel.rolloutId) continue;
+                return {
+                    text: response.tokens?.strings?.[sel.tokenIndex] ?? "",
+                    responseNumber: n,
+                    reward: response.reward,
+                    objective:
+                        response.tokens?.token_objective?.[sel.tokenIndex],
+                    color: tokenObjectiveColor,
+                };
+            }
+        }
+        return null;
     });
 
     // Layout constants — single source of truth.
@@ -439,6 +479,28 @@
         selectedStepIdx = idx;
         // Detail fetch is handled by the $effect that watches selectedStepIdx/dataSource.
     }
+
+    /** Move the selection by `delta` steps (previous / next buttons in the compact layout). */
+    function stepBy(delta: number) {
+        if (radialSteps.length === 0) return;
+        const cur = effectiveSelectedIdx ?? 0;
+        selectedStepIdx = Math.max(
+            0,
+            Math.min(radialSteps.length - 1, cur + delta),
+        );
+    }
+    let stepNav = $derived(
+        compact && effectiveSelectedIdx !== null
+            ? {
+                  onPrev:
+                      effectiveSelectedIdx > 0 ? () => stepBy(-1) : undefined,
+                  onNext:
+                      effectiveSelectedIdx < radialSteps.length - 1
+                          ? () => stepBy(1)
+                          : undefined,
+              }
+            : undefined,
+    );
 
     /** For paths (e.g. learning mode) that must await detail load completion. */
     async function ensureStepDetail(src: DataSource, idx: number) {
@@ -606,8 +668,8 @@
                     learningCutoff={learningMode ? learningCutoff : null}
                     interactionsDisabled={learningMode}
                     bind:selectedMetrics
-                    rotateSelectedToRight={algoOpen}
-                    explainerOpen={algoOpen}
+                    rotateSelectedToRight={algoOpen && !compact}
+                    explainerOpen={algoOpen && !compact}
                 />
             </div>
         </div>
@@ -627,6 +689,7 @@
                 {selectedToken}
                 dimEnabled={panelSettled}
                 onTokenClick={handleTokenClick}
+                {stepNav}
             />
         </div>
         <div class="radial-explainer" class:open={algoOpen} bind:this={explainerEl}>
@@ -643,12 +706,16 @@
                     {slotValues}
                     {tokenObjectiveColor}
                     onClose={toggleOpen}
+                    {compact}
+                    {tokenSummary}
                 />
             {/if}
         </div>
     </div>
     </div>
-    <CrossPaneConnections />
+    {#if !compact}
+        <CrossPaneConnections />
+    {/if}
     <RunRail
         runs={railRuns}
         current={dataSource}
@@ -843,5 +910,79 @@
         min-height: 0;
         display: flex;
         flex-direction: column;
+    }
+
+    // ---- Compact layout ----
+    // Top to bottom: algorithm tabs (RunRail, reordered in its own styles), run header,
+    // radial chart, step inspector. The page itself scrolls. The explainer is taken out
+    // of the flow and shown as a full-screen sheet.
+    @include compact {
+        main {
+            height: auto;
+            min-height: 100vh;
+            min-height: 100dvh;
+            flex-direction: column;
+            overflow-x: clip;
+            overflow-y: visible;
+        }
+
+        .content-col {
+            flex: none;
+        }
+
+        .radial-layout,
+        .radial-layout.explainer-open {
+            display: flex;
+            flex-direction: column;
+            transition: none;
+            // No stacking context here, so that the sheet (z-index 1500) can cover the
+            // sticky algorithm tabs, which are a sibling of this element.
+            z-index: auto;
+        }
+
+        .radial-left,
+        .radial-layout.explainer-open .radial-left {
+            width: 100%;
+            padding: 0;
+            transform: none;
+            transition: none;
+        }
+        .radial-layout.explainer-open .radial-left :global(.run-header),
+        .radial-layout.explainer-open .radial-left :global(.control-bar) {
+            opacity: 1;
+        }
+
+        .chart-wrap {
+            flex: none;
+        }
+
+        .radial-right {
+            min-width: 0;
+            overflow: visible;
+            padding: 0;
+        }
+
+        .radial-explainer {
+            position: fixed;
+            inset: 0;
+            z-index: 1500;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(24px);
+        }
+        .radial-explainer.open {
+            visibility: visible;
+            opacity: 1;
+            // Must stay `none` while open: a transform would turn this element into the
+            // containing block of the fixed-position tooltips inside the explainer.
+            transform: none;
+            transition:
+                opacity 200ms ease,
+                transform 200ms ease;
+        }
+
+        .resize-handle {
+            display: none;
+        }
     }
 </style>

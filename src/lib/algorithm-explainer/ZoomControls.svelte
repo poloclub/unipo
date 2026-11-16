@@ -69,4 +69,10 @@
             color: $c-ink-1;
         }
     }
+    @include compact {
+        button {
+            width: 40px;
+            height: 40px;
+        }
+    }
 </style>

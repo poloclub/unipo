@@ -33,6 +33,7 @@
     import { METRIC_DEFINITIONS } from "./metric-definitions";
     import { Chip, Tooltip } from "$lib/ui";
     import { strings } from "$lib/i18n/strings";
+    import { viewport } from "$lib/ui/viewport.svelte";
 
     function fmtMetricValue(v: number | undefined): string {
         if (v === undefined || !Number.isFinite(v)) return strings.common.dash;
@@ -105,7 +106,7 @@
 
     const mode: ChartMode = "rings";
     let hoverStep: number | null = $state(null);
-    let svgEl: SVGSVGElement;
+    let svgEl: SVGSVGElement | undefined = $state();
     // rollout band hover tooltip — { rolloutNumber, x, y } in container-relative px
     let rolloutBandHover: {
         rolloutNumber: number;
@@ -450,8 +451,35 @@
         return selectedMetrics.map((_, i) => ringBaseRadius(i));
     }
 
+    // The center text is sized in viewBox units, so on a small screen it shrinks with the
+    // chart. Scale it back up toward the size it has on a ~620px desktop chart, but never
+    // beyond what fits inside the innermost ring.
+    let svgPx = $state(VIEW_SIZE);
+    $effect(() => {
+        if (!svgEl) return;
+        const ro = new ResizeObserver(([entry]) => {
+            if (entry.contentRect.width > 0) svgPx = entry.contentRect.width;
+        });
+        ro.observe(svgEl);
+        return () => ro.disconnect();
+    });
+    const CENTER_TEXT_REF_PX = 620; // chart width at which the text has its designed size
+    const CENTER_TEXT_HALF_EXTENT = 135; // viewBox units from the center to the text corner
+    let centerScale = $derived(
+        Math.max(
+            1,
+            Math.min(
+                CENTER_TEXT_REF_PX / svgPx,
+                (rolloutBandR * fit - 12) / CENTER_TEXT_HALF_EXTENT,
+            ),
+        ),
+    );
+
     // mouse → viewBox coords → chart (unscaled) coords (undo fit).
-    function svgMouse(event: MouseEvent): { mx: number; my: number } | null {
+    function svgMouse(event: {
+        clientX: number;
+        clientY: number;
+    }): { mx: number; my: number } | null {
         if (!svgEl) return null;
         const rect = svgEl.getBoundingClientRect();
         const svgScale = VIEW_SIZE / rect.width;
@@ -518,7 +546,7 @@
         }
         // Tooltip position relative to chart-area (svg parent).
         const containerRect = (
-            svgEl.parentElement as HTMLElement
+            svgEl!.parentElement as HTMLElement
         ).getBoundingClientRect();
         rolloutBandHover = {
             rolloutNumber: seg.number,
@@ -535,6 +563,115 @@
         hoverStep = null;
         rolloutBandHover = null;
     }
+
+    // Hover preview is for the mouse only. A finger has no hover: the events a touch
+    // generates would leave the preview stuck on the last touched step.
+    function handlePointerMove(event: PointerEvent) {
+        if (event.pointerType === "touch") return;
+        handleMouseMove(event);
+    }
+    function handlePointerLeave(event: PointerEvent) {
+        if (event.pointerType === "touch") return;
+        handleMouseLeave();
+    }
+
+    // ---- Touch: press and hold, then drag to scrub ----
+    // A plain swipe over the chart must keep scrolling the page, so scrubbing starts only
+    // after the finger has rested on the ring for HOLD_MS. While scrubbing, the step under
+    // the finger is previewed (same as mouse hover) and it is selected on release.
+    // A tap is handled by the regular click handler.
+    const HOLD_MS = 250;
+    const HOLD_SLOP_PX = 10;
+    let scrubbing = $state(false);
+    let hold: { x: number; y: number; timer: number } | null = null;
+
+    /** Step under a viewport point; null inside the gap at 12 o'clock or in the center. */
+    function stepAtPoint(pt: { clientX: number; clientY: number }): number | null {
+        const m = svgMouse(pt);
+        if (!m) return null;
+        if (Math.hypot(m.mx, m.my) < CHART_CONSTANTS.BASE_RADIUS * 0.5) return null;
+        const angle = unrotateAngle(Math.atan2(m.my, m.mx) + Math.PI / 2);
+        const raw = visAngleToRaw(angle);
+        if (raw === null) return null;
+        const idx = Math.round((raw / (Math.PI * 2)) * steps.length);
+        return Math.max(0, Math.min(steps.length - 1, idx));
+    }
+
+    function cancelHold() {
+        if (hold) clearTimeout(hold.timer);
+        hold = null;
+    }
+    function endScrub(commit: boolean) {
+        const step = hoverStep;
+        const wasScrubbing = scrubbing;
+        cancelHold();
+        scrubbing = false;
+        if (!wasScrubbing) return;
+        hoverStep = null;
+        if (commit && step !== null && step !== selectedStep) onStepClick?.(step);
+    }
+
+    function handleTouchStart(event: TouchEvent) {
+        cancelHold();
+        if (interactionsDisabled || steps.length === 0) return;
+        if (event.touches.length !== 1) {
+            endScrub(false);
+            return;
+        }
+        const t = event.touches[0];
+        const start = { clientX: t.clientX, clientY: t.clientY };
+        hold = {
+            x: t.clientX,
+            y: t.clientY,
+            timer: window.setTimeout(() => {
+                const step = stepAtPoint(start);
+                if (!hold || step === null) return;
+                scrubbing = true;
+                hoverStep = step;
+            }, HOLD_MS),
+        };
+    }
+    function handleTouchMove(event: TouchEvent) {
+        const t = event.touches[0];
+        if (!t) return;
+        if (scrubbing) {
+            // Keeps the page from scrolling under the finger while scrubbing.
+            if (event.cancelable) event.preventDefault();
+            const step = stepAtPoint(t);
+            if (step !== null) hoverStep = step;
+            return;
+        }
+        // Moved before the hold elapsed → this is a scroll, not a scrub.
+        if (hold && Math.hypot(t.clientX - hold.x, t.clientY - hold.y) > HOLD_SLOP_PX)
+            cancelHold();
+    }
+    function handleTouchEnd(event: TouchEvent) {
+        // After a scrub the browser must not also send a click for the same touch.
+        if (scrubbing && event.cancelable) event.preventDefault();
+        endScrub(true);
+    }
+    function handleTouchCancel() {
+        endScrub(false);
+    }
+
+    // Registered by hand: touchmove has to be non-passive for preventDefault to work,
+    // and Svelte registers `ontouchmove` attributes as passive.
+    $effect(() => {
+        const el = svgEl;
+        if (!el) return;
+        const opts = { passive: false } as const;
+        el.addEventListener("touchstart", handleTouchStart, { passive: true });
+        el.addEventListener("touchmove", handleTouchMove, opts);
+        el.addEventListener("touchend", handleTouchEnd, opts);
+        el.addEventListener("touchcancel", handleTouchCancel);
+        return () => {
+            cancelHold();
+            el.removeEventListener("touchstart", handleTouchStart);
+            el.removeEventListener("touchmove", handleTouchMove);
+            el.removeEventListener("touchend", handleTouchEnd);
+            el.removeEventListener("touchcancel", handleTouchCancel);
+        };
+    });
 
     // Click in the chart-area outside the SVG (empty space) clears the selection.
     function handleAreaClick(event: MouseEvent) {
@@ -632,9 +769,14 @@
             bind:this={svgEl}
             viewBox="0 0 {VIEW_SIZE} {VIEW_SIZE}"
             class="radial-chart-svg"
-            onmousemove={handleMouseMove}
-            onmouseleave={handleMouseLeave}
+            class:scrubbing
+            onpointermove={handlePointerMove}
+            onpointerleave={handlePointerLeave}
             onclick={handleClick}
+            oncontextmenu={(e) => {
+                // A long press must start a scrub, not open the browser's context menu.
+                if (hold || scrubbing) e.preventDefault();
+            }}
             role="img"
         >
             <g transform="translate({cx}, {cy}) rotate({rotation.current})">
@@ -874,7 +1016,7 @@
             </g>
 
             <!-- Center text overlay: outside the rotation group so it stays upright. -->
-            <g transform="translate({cx}, {cy})">
+            <g transform="translate({cx}, {cy}) scale({centerScale})">
                 <text
                     x="0"
                     y="-22"
@@ -998,6 +1140,9 @@
     {/if}
 
     <div class="control-bar">
+        {#if viewport.touch}
+            <p class="touch-hint">{strings.radialChart.touchHint}</p>
+        {/if}
         <div class="control-head">
             <h3 class="control-title">{strings.radialChart.controlBar.title}</h3>
             <Tooltip
@@ -1205,8 +1350,12 @@
         gap: 4px;
         pointer-events: none;
     }
-    .chip-wrapper:hover .chip-popover {
-        display: flex;
+    // Hover devices only: after a tap, :hover stays on the chip, which would leave the
+    // popover open (and overflowing a narrow screen) until the next tap elsewhere.
+    @media (hover: hover) {
+        .chip-wrapper:hover .chip-popover {
+            display: flex;
+        }
     }
     .chip-popover strong {
         font-size: $fs-sm;
@@ -1226,5 +1375,47 @@
         font-size: $fs-xs;
         color: $c-red-strong;
         font-style: normal;
+    }
+
+    // ---- Touch ----
+    .radial-chart-svg {
+        // A long press starts a scrub; it must not select the center text or open the
+        // iOS callout instead.
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+    }
+    .touch-hint {
+        @include type-description;
+        margin: 0 0 $sp-1;
+    }
+
+    // ---- Compact layout ----
+    // The chart takes the full width and its own height; the metric chips follow it in
+    // the normal flow instead of floating over the bottom of the chart area.
+    @include compact {
+        .radial-chart-container {
+            height: auto;
+            gap: $sp-3;
+        }
+        .chart-area {
+            flex: none;
+            padding: $sp-2 $sp-2 0;
+        }
+        .radial-chart-svg {
+            width: 100%;
+            // 85vh keeps the whole chart on screen when a phone is held in landscape;
+            // 560px keeps it from filling the whole screen of a tablet in portrait.
+            max-width: min(100%, 85vh, 560px);
+            max-height: none;
+        }
+        .chart-area.explainer-open .radial-chart-svg {
+            transform: none;
+        }
+        .control-bar {
+            position: static;
+            padding: 0 $sp-4 $sp-4;
+            backdrop-filter: none;
+        }
     }
 </style>

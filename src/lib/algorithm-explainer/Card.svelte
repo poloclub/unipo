@@ -207,6 +207,13 @@
         grid-auto-columns: max-content;
         align-items: stretch;
     }
+    // Compact layout: sections go below each other instead of side by side. A narrower
+    // card can be shown at a larger scale on a phone screen.
+    @include compact {
+        .card-body {
+            grid-auto-flow: row;
+        }
+    }
     .card-header-value {
         margin-left: $sp-2;
         padding: 0 4px;

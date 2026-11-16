@@ -5,6 +5,7 @@
     import type { SectionDescriptor, WordSeg } from "./diff/types";
     import { slotKey } from "./bindings";
     import { toggleCard } from "./state.svelte";
+    import { viewport } from "$lib/ui/viewport.svelte";
 
     interface Props {
         section: SectionDescriptor;
@@ -139,7 +140,15 @@
         renderAll();
     });
 
-    function onClick() {
+    function onClick(e: MouseEvent) {
+        // Touch: a tap on a term shows its tooltip (handled in AlgorithmExplainer), so the
+        // same tap must not also open or close the linked card. A tap anywhere else in
+        // the section still toggles it.
+        const byTouch =
+            "pointerType" in e && e.pointerType
+                ? e.pointerType === "touch"
+                : viewport.touch;
+        if (byTouch && (e.target as Element).closest?.(".term--has-tooltip")) return;
         if (section.opensCardId) {
             toggleCard(section.opensCardId, parentCardId);
         }

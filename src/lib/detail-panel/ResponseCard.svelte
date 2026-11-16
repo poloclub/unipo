@@ -343,6 +343,23 @@
             display: block;
         }
     }
+    // Compact layout: a finger-sized expand button and a tighter row.
+    @include compact {
+        .card {
+            gap: $sp-2;
+            padding: $sp-2 0 $sp-2 $sp-1;
+        }
+        .expand-btn {
+            width: 32px;
+            height: 32px;
+            margin-left: 0;
+            opacity: 0.7;
+        }
+        .reward {
+            margin-left: 0;
+            min-width: 48px;
+        }
+    }
     .reward {
         @include type-mono;
         flex-shrink: 0;

@@ -1,4 +1,5 @@
-<!-- Hover popover tooltip. Uses position: fixed so overflowing parents do not clip it. -->
+<!-- Popover tooltip. Opens on hover with a mouse and on tap with a finger.
+     Uses position: fixed so overflowing parents do not clip it. -->
 <script lang="ts">
     import type { Snippet } from "svelte";
 
@@ -68,16 +69,56 @@
     }
     function onLeave() {
         show = false;
+        openedByTouch = false;
     }
+
+    // Mouse: open while the pointer is over the trigger.
+    // Touch has no hover, so a tap on the trigger toggles the tooltip instead.
+    let openedByTouch = $state(false);
+    function onPointerEnter(e: PointerEvent) {
+        if (e.pointerType === "mouse") onEnter();
+    }
+    function onPointerLeave(e: PointerEvent) {
+        if (e.pointerType === "mouse") onLeave();
+    }
+    function onPointerDown(e: PointerEvent) {
+        if (e.pointerType === "mouse") return;
+        if (show) {
+            onLeave();
+        } else {
+            onEnter();
+            openedByTouch = true;
+        }
+    }
+
+    // A tooltip opened by a tap stays until the next tap elsewhere or the next scroll
+    // (its position is fixed, so it would otherwise drift away from its trigger).
+    $effect(() => {
+        if (!show || !openedByTouch) return;
+        const onDown = (e: PointerEvent) => {
+            if (triggerEl?.contains(e.target as Node)) return;
+            onLeave();
+        };
+        const onScroll = () => onLeave();
+        window.addEventListener("pointerdown", onDown, true);
+        window.addEventListener("scroll", onScroll, true);
+        return () => {
+            window.removeEventListener("pointerdown", onDown, true);
+            window.removeEventListener("scroll", onScroll, true);
+        };
+    });
 </script>
 
 <span
     class="tip-wrapper"
     bind:this={triggerEl}
-    onmouseenter={onEnter}
-    onmouseleave={onLeave}
+    onpointerenter={onPointerEnter}
+    onpointerleave={onPointerLeave}
+    onpointerdown={onPointerDown}
     onfocusin={onEnter}
-    onfocusout={onLeave}
+    onfocusout={() => {
+        if (!openedByTouch) onLeave();
+    }}
 >
     {@render children()}
 </span>

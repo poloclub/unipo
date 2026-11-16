@@ -108,4 +108,18 @@
         gap: $sp-2;
         pointer-events: auto;
     }
+
+    @include compact {
+        .run-header {
+            flex-direction: column;
+            gap: $sp-2;
+            padding: $sp-4 $sp-4 0;
+        }
+        .title {
+            font-size: 26px;
+        }
+        .meta {
+            padding: 0;
+        }
+    }
 </style>

@@ -35,6 +35,8 @@
         /** Gate enabling dim treatment — parent toggles true after explainer settles. */
         dimEnabled?: boolean;
         onTokenClick?: (rolloutId: string, tokenIndex: number) => void;
+        /** Previous / next step buttons (compact layout). Omitted → no buttons. */
+        stepNav?: { onPrev?: () => void; onNext?: () => void };
     }
 
     let {
@@ -51,6 +53,7 @@
         selectedToken = null,
         dimEnabled = false,
         onTokenClick,
+        stepNav,
     }: Props = $props();
 
     // Max prompts displayed per step. Data may contain N (e.g. DAPO 4) but the
@@ -109,6 +112,7 @@
             {onAlgorithmExplainer}
             {rolloutNumber}
             promptsShownCount={displayedPrompts.length}
+            {stepNav}
         />
         {#if hasResponses}
             <ResponseList
@@ -353,6 +357,29 @@
         :global(b) {
             color: $c-ink-2;
             font-weight: $fw-medium;
+        }
+    }
+
+    // Compact layout: the panel grows with its content and the page scrolls.
+    // The objectives block doubles as the legend for the token colors, so it moves
+    // above the response list instead of sitting below a long scroll.
+    @include compact {
+        .detail-panel {
+            height: auto;
+            overflow: visible;
+            padding: 0 $sp-4 $sp-6;
+        }
+        .placeholder {
+            min-height: 160px;
+        }
+        .objectives {
+            order: 1;
+            padding: $sp-4 0;
+            border-bottom: 1px solid $c-line;
+        }
+        .detail-panel :global(.response-list),
+        .no-rollouts {
+            order: 2;
         }
     }
 

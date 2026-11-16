@@ -2,17 +2,52 @@
     import { algoExplainer, setCompareWith } from "./state.svelte";
     import { ALGORITHMS } from "./loader";
     import Canvas from "./Canvas.svelte";
+    import { strings, t } from "$lib/i18n/strings";
+
+    /** The token whose numbers fill the formulas. */
+    interface TokenSummary {
+        text: string;
+        /** 1-based response number, as shown in the response list (R1, R2, ...). */
+        responseNumber: number;
+        reward?: number;
+        objective?: number;
+        /** Heatmap color of the token, same as in the response list. */
+        color?: string | null;
+    }
 
     interface Props {
         slotValues?: Map<string, string>;
         tokenObjectiveColor?: string | null;
         onClose?: () => void;
+        /**
+         * Compact layout: the explainer is a full-screen sheet. The response list is
+         * hidden behind it, so the selected token is summarized in the header, and the
+         * cards are re-fitted to the screen every time the sheet opens.
+         */
+        compact?: boolean;
+        tokenSummary?: TokenSummary | null;
     }
     let {
         slotValues = new Map(),
         tokenObjectiveColor = null,
         onClose,
+        compact = false,
+        tokenSummary = null,
     }: Props = $props();
+
+    // Height of the header overlay, which the fitted cards must stay clear of.
+    const COMPACT_HEAD_PX = 124;
+
+    /** Whitespace-only tokens are invisible as text, so show them as symbols. */
+    function visibleToken(text: string): string {
+        if (text.trim() !== "") return text;
+        return text.replace(/\n/g, "↵").replace(/\t/g, "⇥").replace(/ /g, "␣") || "∅";
+    }
+    function fmtNum(v: number | undefined, digits: number): string {
+        return v !== undefined && Number.isFinite(v)
+            ? v.toFixed(digits)
+            : strings.common.dash;
+    }
 
     let rootEl: HTMLDivElement | undefined = $state();
     let tip: { x: number; y: number; text: string } | null = $state(null);
@@ -56,16 +91,37 @@
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") pickerOpen = false;
         };
-        window.addEventListener("mousedown", onDown);
+        window.addEventListener("pointerdown", onDown);
         window.addEventListener("keydown", onKey);
         return () => {
-            window.removeEventListener("mousedown", onDown);
+            window.removeEventListener("pointerdown", onDown);
             window.removeEventListener("keydown", onKey);
         };
     });
 
-    function onMouseOver(e: MouseEvent) {
-        const target = e.target as HTMLElement;
+    // Term tooltips: with a mouse they follow hover. A finger has no hover, so a tap on a
+    // term shows its tooltip and the next touch anywhere dismisses it.
+    let lastPointerType = "mouse";
+    function onPointerOver(e: PointerEvent) {
+        if (e.pointerType !== "mouse") return;
+        showTermTip(e.target as HTMLElement);
+    }
+    function onPointerOut(e: PointerEvent) {
+        if (e.pointerType !== "mouse") return;
+        const related = e.relatedTarget as HTMLElement | null;
+        if (related && related.closest(".term")) return;
+        tip = null;
+    }
+    function onPointerDown(e: PointerEvent) {
+        lastPointerType = e.pointerType;
+        if (e.pointerType !== "mouse") tip = null;
+    }
+    function onClick(e: MouseEvent) {
+        if (lastPointerType === "mouse") return;
+        showTermTip(e.target as HTMLElement);
+    }
+
+    function showTermTip(target: HTMLElement) {
         const termEl = target.closest(".term") as HTMLElement | null;
         if (!termEl) {
             tip = null;
@@ -97,17 +153,15 @@
             return;
         }
         const r = termEl.getBoundingClientRect();
+        // Keep the 300px-wide tooltip inside a narrow screen.
+        const half = Math.min(150, window.innerWidth / 2 - 8);
+        const cx = r.left + r.width / 2;
         tip = {
-            x: r.left + r.width / 2,
+            x: Math.max(half + 8, Math.min(window.innerWidth - half - 8, cx)),
+            // Not enough room above the term → the tooltip goes below it instead.
             y: r.top,
             text,
         };
-    }
-
-    function onMouseOut(e: MouseEvent) {
-        const related = e.relatedTarget as HTMLElement | null;
-        if (related && related.closest(".term")) return;
-        tip = null;
     }
 </script>
 
@@ -139,15 +193,24 @@
     </div>
 {/snippet}
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
     class="algorithm-explainer"
+    class:compact
     bind:this={rootEl}
-    onmouseover={onMouseOver}
-    onmouseout={onMouseOut}
+    onpointerover={onPointerOver}
+    onpointerout={onPointerOut}
+    onpointerdown={onPointerDown}
+    onclick={onClick}
     role="region"
     aria-label="Algorithm Explainer"
 >
-    <Canvas {slotValues} {tokenObjectiveColor} />
+    <Canvas
+        {slotValues}
+        {tokenObjectiveColor}
+        autoFit={compact}
+        fitTopInset={compact ? COMPACT_HEAD_PX : 0}
+    />
     <header class="head">
         <!-- <span class="overline">Algorithm Explainer</span> -->
         <div class="title-row" bind:this={titleRowEl}>
@@ -196,6 +259,33 @@
                 </span>
             {/if}
         </div>
+        {#if compact}
+            <div class="token-summary">
+                {#if tokenSummary}
+                    <span class="ts-label">{strings.algorithmExplainer.tokenSummary.label}</span>
+                    <span
+                        class="ts-token"
+                        style:background={tokenSummary.color ?? undefined}
+                        >{visibleToken(tokenSummary.text)}</span
+                    >
+                    <span class="ts-meta">
+                        {t(strings.algorithmExplainer.tokenSummary.response, {
+                            n: tokenSummary.responseNumber,
+                        })}
+                        ·
+                        {t(strings.algorithmExplainer.tokenSummary.reward, {
+                            value: fmtNum(tokenSummary.reward, 2),
+                        })}
+                        ·
+                        {t(strings.algorithmExplainer.tokenSummary.objective, {
+                            value: fmtNum(tokenSummary.objective, 3),
+                        })}
+                    </span>
+                {:else}
+                    <span class="ts-empty">{strings.algorithmExplainer.tokenSummary.empty}</span>
+                {/if}
+            </div>
+        {/if}
     </header>
     {#if onClose}
         <button
@@ -469,5 +559,72 @@
         transform: translate(-50%, calc(-100% - 8px));
         pointer-events: none;
         white-space: normal;
+    }
+
+    // ---- Compact layout: full-screen sheet ----
+    .compact {
+        .head {
+            right: 0;
+            padding: $sp-3 $sp-3 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: $sp-2;
+        }
+        .title-row {
+            // Leaves room for the close button in the top-right corner.
+            max-width: calc(100% - 52px);
+            flex-wrap: wrap;
+            row-gap: $sp-1;
+        }
+        .title {
+            font-size: $fs-lg;
+        }
+        .arrow {
+            font-size: 1rem;
+            padding: 0 $sp-1;
+        }
+        .close-btn {
+            width: 40px;
+            height: 40px;
+        }
+    }
+    .token-summary {
+        max-width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: $sp-1 $sp-2;
+        padding: $sp-2 $sp-3;
+        background: $c-surface;
+        border: 1px solid $c-line;
+        border-radius: $radius-md;
+        box-shadow: $shadow-card;
+        font-family: $font-sans;
+        font-size: $fs-xs;
+        line-height: $lh-tight;
+        color: $c-ink-2;
+    }
+    .ts-label {
+        color: $c-ink-3;
+    }
+    .ts-token {
+        max-width: 14ch;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: pre;
+        padding: 1px 4px;
+        border-radius: $radius-sm;
+        box-shadow: inset 0 0 0 2px $c-ink-1;
+        font-family: $font-mono;
+        color: $c-ink-1;
+    }
+    .ts-meta {
+        font-family: $font-mono;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .ts-empty {
+        color: $c-ink-3;
     }
 </style>
